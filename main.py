@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import messagebox
 import os
 import openpyxl as op
+import csv
 
 path_1 = ''
 path_2 = ''
@@ -13,170 +15,235 @@ win.title('Программа')
 
 
 def get_info():
-    print(f'Номер лабораторного журнала - {nb_lab_journal.get()}')
-    print(f'Регистрационный номер пробы - {rg_nb_sample.get()}')
-    print(f'Наименование пробы(образца) - {name_sample.get()}')
-    print(f'ФИО специалиста ответственного за пробоподготовку - {nm_sample_executor.get()}')
-    print(f'Примечания пробоподготовки - {nt_sample.get()}')
-    print(f'Примечания регистрационного журнала - {nt_register.get()}')
-    print(f'Укажите перечень показателей через запятую - {ls_indicators.get()}')
-    print(f'Укажите реквизиты НД для проведения пробоподготовки - {det_nd_prep_sample.get()}')
-    print(f'Укажите реквизиты НД на метод исследования - {det_nd_research_sample.get()}')
-    print(f'ФИО специалиста проводившего исследование - {sp_did_research.get()}')
-    print(f'ФИО ответственного исполнителя - {rsp_executor.get()}')
-    print(f'Дата начала исследования - {dt_st_research.get()}')
-    print(f'Дата начала пробоподготовки - {dt_st_sample_prep.get()}')
-    print(f'Дата отбора пробы (образца) - {dt_st_sampling.get()}')
-    print(f'Дата поступления - {dt_get_receipt.get()}')
-    print(f'Дата окончания исследования - {dt_fn_research.get()}')
-    print(f'Дата окончания пробоподготовки - {dt_fn_sample_prep.get()}')
-    print(f'Дата утилизации пробы/сведения о консервации - {dt_disposal.get()}')
-    print(f'Дата выписки листа протокола - {dt_issue_protocol.get()}')
-    print(f'Этапы пробоподготовки - {steps_sample.get()}')
-    print(f'Этапы исследования - {stp_research.get()}')
-    print('_________________________________________________')
+	print(f'Номер лабораторного журнала - {nb_lab_journal.get()}')
+	print(f'Регистрационный номер пробы - {rg_nb_sample.get()}')
+	print(f'Наименование пробы(образца) - {name_sample.get()}')
+	print(f'ФИО специалиста ответственного за пробоподготовку - {nm_sample_executor.get()}')
+	print(f'Примечания пробоподготовки - {nt_sample.get()}')
+	print(f'Примечания регистрационного журнала - {nt_register.get()}')
+	print(f'Укажите перечень показателей через запятую - {ls_indicators.get()}')
+	print(f'Укажите реквизиты НД для проведения пробоподготовки - {det_nd_prep_sample.get()}')
+	print(f'Укажите реквизиты НД на метод исследования - {det_nd_research_sample.get()}')
+	print(f'ФИО специалиста проводившего исследование - {sp_did_research.get()}')
+	print(f'ФИО ответственного исполнителя - {rsp_executor.get()}')
+	print(f'Дата начала исследования - {dt_st_research.get()}')
+	print(f'Дата начала пробоподготовки - {dt_st_sample_prep.get()}')
+	print(f'Дата отбора пробы (образца) - {dt_st_sampling.get()}')
+	print(f'Дата поступления - {dt_get_receipt.get()}')
+	print(f'Дата окончания исследования - {dt_fn_research.get()}')
+	print(f'Дата окончания пробоподготовки - {dt_fn_sample_prep.get()}')
+	print(f'Дата утилизации пробы/сведения о консервации - {dt_disposal.get()}')
+	print(f'Дата выписки листа протокола - {dt_issue_protocol.get()}')
+	print(f'Этапы пробоподготовки - {steps_sample.get()}')
+	print(f'Этапы исследования - {stp_research.get()}')
+	print('_________________________________________________')
 
 
 def excel_func():
-    if path_1 == '':
-        path_sample_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_sample.xlsx'
-    else:
-        path_sample_file = path_1
-    if path_2 == '':
-        path_register_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_register.xlsx'
-    else:
-        path_register_file = path_2
+	if path_1 == '':
+		path_sample_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_sample.xlsx'
+	else:
+		path_sample_file = path_1
+	if path_2 == '':
+		path_register_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_register.xlsx'
+	else:
+		path_register_file = path_2
+
+	book_1 = op.load_workbook(filename=path_sample_file)
+	sheet_1 = book_1.active
+	book_2 = op.load_workbook(filename=path_register_file)
+	sheet_2 = book_2.active
+	sample_file = [
+		nb_lab_journal.get(),
+		rg_nb_sample.get(),
+		name_sample.get(),
+		det_nd_prep_sample.get(),
+		steps_sample.get(),
+		dt_st_sample_prep.get(),
+		dt_fn_sample_prep.get(),
+		nm_sample_executor.get(),
+		det_nd_research_sample.get(),
+		stp_research.get(),
+		dt_st_research.get(),
+		dt_fn_research.get(),
+		ls_indicators.get() + ' ' + default_indicator,
+		sp_did_research.get(),
+		nt_sample.get()
+	]
+	register_file = [
+		nb_lab_journal.get(),
+		rg_nb_sample.get(),
+		name_sample.get(),
+		dt_st_sampling.get(),
+		dt_get_receipt.get(),
+		dt_st_research.get(),
+		ls_indicators.get(),
+		dt_fn_research.get(),
+		dt_disposal.get(),
+		dt_issue_protocol.get(),
+		rsp_executor.get(),
+		nt_register.get()
+	]
+
+	sheet_1.append(sample_file)
+	book_1.save(filename=path_sample_file)
+	path = os.path.realpath(path_sample_file)
+
+	sheet_2.append(register_file)
+	book_2.save(filename=path_register_file)
+	path = os.path.realpath(path_register_file)
+
+	os.startfile(path_sample_file)
+	os.startfile(path_register_file)
+	print('ready')
 
 
-    book_1 = op.load_workbook(filename=path_sample_file)
-    sheet_1 = book_1.active
-    book_2 = op.load_workbook(filename=path_register_file)
-    sheet_2 = book_2.active
-    sample_file = [nb_lab_journal.get(),
-                   rg_nb_sample.get(),
-                   name_sample.get(),
-                   det_nd_prep_sample.get(),
-                   steps_sample.get(),
-                   dt_st_sample_prep.get(),
-                   dt_fn_sample_prep.get(),
-                   nm_sample_executor.get(),
-                   det_nd_research_sample.get(),
-                   stp_research.get(),
-                   dt_st_research.get(),
-                   dt_fn_research.get(),
-                   ls_indicators.get() + ' ' + default_indicator,
-                   sp_did_research.get(),
-                   nt_sample.get()
-                   ]
-    register_file = [nb_lab_journal.get(),
-                     rg_nb_sample.get(),
-                     name_sample.get(),
-                     dt_st_sampling.get(),
-                     dt_get_receipt.get(),
-                     dt_st_research.get(),
-                     ls_indicators.get(),
-                     dt_fn_research.get(),
-                     dt_disposal.get(),
-                     dt_issue_protocol.get(),
-                     rsp_executor.get(),
-                     nt_register.get()
-                     ]
+def read_csv():
+	with open('datas/did_research.csv', 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter=';')
+		for row in csv_reader:
+			return row
 
-    sheet_1.append(sample_file)
-    book_1.save(filename=path_sample_file)
-    path = os.path.realpath(path_sample_file)
 
-    sheet_2.append(register_file)
-    book_2.save(filename=path_register_file)
-    path = os.path.realpath(path_register_file)
-
-    os.startfile(path_sample_file)
-    os.startfile(path_register_file)
-    print('ready')
+def write_csv(row):
+	row = sorted(row)
+	with open('datas/did_research.csv', 'w', newline='', encoding='utf-8') as f:
+		writer = csv.writer(f, delimiter=';')
+		writer.writerow(row)
 
 
 def get_file_1():
-    global path_1
-    path_1 = filedialog.askopenfilename()
-    tk.Label(win, text=path_1).grid(row=21, column=1)
-    print(path_1)
+	global path_1
+	path_1 = filedialog.askopenfilename()
+	tk.Label(win, text=path_1).grid(row=21, column=1)
+	print(path_1)
 
 
 def get_file_2():
-    global path_2
-    path_2 = filedialog.askopenfilename()
-    tk.Label(win, text=path_2).grid(row=22, column=1)
-    print(path_2)
+	global path_2
+	path_2 = filedialog.askopenfilename()
+	tk.Label(win, text=path_2).grid(row=22, column=1)
+	print(path_2)
 
 
 def repeat_for_nd():
-    if repeat_for_nd_value.get() == 'Yes':
-        det_nd_research_sample.insert(0, det_nd_prep_sample.get())
-    if repeat_for_nd_value.get() == 'No':
-        det_nd_research_sample.delete(0, tk.END)
+	if repeat_for_nd_value.get() == 'Yes':
+		det_nd_research_sample.insert(0, det_nd_prep_sample.get())
+	if repeat_for_nd_value.get() == 'No':
+		det_nd_research_sample.delete(0, tk.END)
 
 
 def repeat_for_sp():
-    if repeat_for_sp_value.get() == 'Yes':
-        rsp_executor.insert(0, sp_did_research.get())
-    if repeat_for_sp_value.get() == 'No':
-        rsp_executor.delete(0, tk.END)
+	if repeat_for_sp_value.get() == 'Yes':
+		rsp_executor.insert(0, sp_did_research.get())
+	if repeat_for_sp_value.get() == 'No':
+		rsp_executor.delete(0, tk.END)
 
 
 def repeat_for_dt_st_1():
-    if dt_st_value_1.get() == 'Yes':
-        dt_st_sample_prep.insert(0, dt_st_research.get())
-    if dt_st_value_1.get() == 'No':
-        dt_st_sample_prep.delete(0, tk.END)
+	if dt_st_value_1.get() == 'Yes':
+		dt_st_sample_prep.insert(0, dt_st_research.get())
+	if dt_st_value_1.get() == 'No':
+		dt_st_sample_prep.delete(0, tk.END)
 
 
 def repeat_for_dt_st_2():
-    if dt_st_value_2.get() == 'Yes':
-        dt_st_sampling.insert(0, dt_st_research.get())
-    if dt_st_value_2.get() == 'No':
-        dt_st_sampling.delete(0, tk.END)
+	if dt_st_value_2.get() == 'Yes':
+		dt_st_sampling.insert(0, dt_st_research.get())
+	if dt_st_value_2.get() == 'No':
+		dt_st_sampling.delete(0, tk.END)
 
 
 def repeat_for_dt_st_3():
-    if dt_st_value_3.get() == 'Yes':
-        dt_get_receipt.insert(0, dt_st_research.get())
-    if dt_st_value_3.get() == 'No':
-        dt_get_receipt.delete(0, tk.END)
+	if dt_st_value_3.get() == 'Yes':
+		dt_get_receipt.insert(0, dt_st_research.get())
+	if dt_st_value_3.get() == 'No':
+		dt_get_receipt.delete(0, tk.END)
 
 
 def repeat_for_dt_fn_1():
-    if dt_fn_value_1.get() == 'Yes':
-        dt_fn_sample_prep.insert(0, dt_fn_research.get())
-    if dt_fn_value_1.get() == 'No':
-        dt_fn_sample_prep.delete(0, tk.END)
+	if dt_fn_value_1.get() == 'Yes':
+		dt_fn_sample_prep.insert(0, dt_fn_research.get())
+	if dt_fn_value_1.get() == 'No':
+		dt_fn_sample_prep.delete(0, tk.END)
 
 
 def repeat_for_dt_fn_2():
-    if dt_fn_value_2.get() == 'Yes':
-        dt_disposal.insert(0, dt_fn_research.get())
-    if dt_fn_value_2.get() == 'No':
-        dt_disposal.delete(0, tk.END)
+	if dt_fn_value_2.get() == 'Yes':
+		dt_disposal.insert(0, dt_fn_research.get())
+	if dt_fn_value_2.get() == 'No':
+		dt_disposal.delete(0, tk.END)
 
 
 def repeat_for_dt_fn_3():
-    if dt_fn_value_3.get() == 'Yes':
-        dt_issue_protocol.insert(0, dt_fn_research.get())
-    if dt_fn_value_3.get() == 'No':
-        dt_issue_protocol.delete(0, tk.END)
+	if dt_fn_value_3.get() == 'Yes':
+		dt_issue_protocol.insert(0, dt_fn_research.get())
+	if dt_fn_value_3.get() == 'No':
+		dt_issue_protocol.delete(0, tk.END)
 
 
 def repeat_for_stp():
-    if repeat_for_stp_value.get() == 'Yes':
-        stp_research.insert(0, steps_sample.get())
-    if repeat_for_stp_value.get() == 'No':
-        stp_research.delete(0, tk.END)
+	if repeat_for_stp_value.get() == 'Yes':
+		stp_research.insert(0, steps_sample.get())
+	if repeat_for_stp_value.get() == 'No':
+		stp_research.delete(0, tk.END)
 
 
 def find_not_find(eventObject):
-    global default_indicator
-    default_indicator = eventObject.widget.get()
-    print(default_indicator)
+	global default_indicator
+	default_indicator = eventObject.widget.get()
+	print(default_indicator)
 
+
+def start_window_0():
+	def delete():
+		selection = employee_listbox.curselection()
+		name_of_selection = employee_listbox.get(int(employee_listbox.curselection()[0]))
+		employees.remove(name_of_selection)
+		write_csv(employees)
+		# мы можем получить удаляемый элемент по индексу
+		# selected_language = employee_listbox.get(selection[0])
+		employee_listbox.delete(selection[0])
+
+	# добавление нового элемента
+	def add():
+		new_employee = employee_entry.get()
+		write_csv(employees + [new_employee])
+		employee_listbox.insert(0, new_employee)
+
+	def show_print(evt):
+		w = evt.widget
+		value = w.get(int(w.curselection()[0]))
+		print(value)
+
+	def add_to_enter_box():
+		selection = employee_listbox.curselection()
+		name_of_selection = employee_listbox.get(int(employee_listbox.curselection()[0]))
+		sp_did_research.insert(0, name_of_selection)
+		new_window_0.destroy()
+
+	new_window_0 = tk.Toplevel(win)
+	new_window_0.grab_set()  # нельзя нажимать в других окнах
+	new_window_0.title('Окно 1')
+	new_window_0.geometry('400x300+1800+350')
+	new_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+	new_window_0.wm_attributes("-topmost", 1)  # чтобы повешать поверх все окон, но работает и без
+	# текстовое поле и кнопка для добавления в список
+	employee_entry = ttk.Entry(new_window_0)
+	employee_entry.grid(column=0, row=0, padx=6, pady=6, sticky='ew')
+	ttk.Button(new_window_0, text="Добавить", command=add).grid(column=1, row=0, padx=6, pady=6)
+	employees = read_csv()
+	employees_var = tk.Variable(new_window_0, value=employees)
+	employee_listbox = tk.Listbox(new_window_0, listvariable=employees_var)
+	employee_listbox.grid(row=1, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
+
+	ttk.Button(new_window_0, text="Добавить", command=add_to_enter_box).grid(row=2, column=0, padx=5, pady=5)
+	ttk.Button(new_window_0, text="Удалить", command=delete).grid(row=2, column=1, padx=5, pady=5)
+
+
+def on_closing_0(this_window):
+	if messagebox.askokcancel('Выход из приложения', 'Хотите ли вы выйти из приложения?'):
+		this_window.destroy()
 
 # двойное
 tk.Label(win, text='Номер лабораторного журнала').grid(row=0, column=0)
@@ -238,9 +305,10 @@ repeat_for_sp_value.set('No')
 tk.Label(win, text='ФИО специалиста проводившего исследование').grid(row=9, column=0)
 sp_did_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 sp_did_research.grid(row=9, column=1)
+tk.Button(win, text='Выбрать специалистиа', command=start_window_0).grid(row=9, column=2)
 sp_check_button = tk.Checkbutton(win, text='пов. для ответственного исполнителя', command=repeat_for_sp,
                                  variable=repeat_for_sp_value, offvalue='No', onvalue='Yes')
-sp_check_button.grid(row=9, column=2)
+sp_check_button.grid(row=9, column=3)
 tk.Label(win, text='ФИО ответственного исполнителя').grid(row=10, column=0)
 rsp_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 rsp_executor.grid(row=10, column=1)
