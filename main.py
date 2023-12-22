@@ -72,7 +72,6 @@ def excel_func():
 		messagebox.showerror('Ошибка',
 		                     'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
 		return
-
 	if path_1 == '':
 		path_sample_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_sample.xlsx'
 	else:
@@ -160,9 +159,13 @@ def excel_func():
 			stp_research.get(),
 		]
 	)
+
+	if op_xl_button_value.get() == 'No':
+		print('Сохранение в эксель без открытия')
+		return
 	os.startfile(path_sample_file)
 	os.startfile(path_register_file)
-	print('ready')
+	print('Сохранение в эксель с открытием ')
 
 
 def read_csv():
@@ -551,6 +554,11 @@ tk.Button(text='Выбери файл', bd=5, font=('Arial', 10), command=get_fi
 # Эксель файл 2
 tk.Label(win, text='Выбери регистрационный эксель файл 2').grid(row=22, column=0)
 tk.Button(text='Выбери файл 2', bd=5, font=('Arial', 10), command=get_file_2).grid(row=22, column=2, stick='w', padx=25)
+op_xl_button_value = tk.StringVar()
+op_xl_button_value.set('Yes')
+print(op_xl_button_value.get())
+op_xl_button = tk.Checkbutton(win, text='открыть ли эксель', variable=op_xl_button_value, offvalue='No', onvalue='Yes')
+op_xl_button.grid(row=22, column=3)
 
 # Кнопка на сервер
 tk.Button(text='Пушь на сервак', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, pady=10)
