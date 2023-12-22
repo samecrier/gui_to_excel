@@ -69,7 +69,8 @@ def excel_func():
 		for row in csv_reader:
 			dict_keys.append(row[1])
 	if rg_nb_sample.get() in dict_keys:
-		messagebox.showerror('Ошибка', 'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
+		messagebox.showerror('Ошибка',
+		                     'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
 		return
 
 	if path_1 == '':
@@ -85,6 +86,15 @@ def excel_func():
 	sheet_1 = book_1.active
 	book_2 = op.load_workbook(filename=path_register_file)
 	sheet_2 = book_2.active
+
+	print(ls_indicators.get(), type(ls_indicators.get()))
+	if ('обнаружена' or 'не обнаружена') in ls_indicators.get():
+		ls_indicators_text = ls_indicators.get()
+		print('мы тут')
+	else:
+		ls_indicators_text = ls_indicators.get() + ' ' + default_indicator
+		print('мы здеся')
+
 	sample_file = [
 		nb_lab_journal.get(),
 		rg_nb_sample.get(),
@@ -98,7 +108,7 @@ def excel_func():
 		stp_research.get(),
 		dt_st_research.get(),
 		dt_fn_research.get(),
-		ls_indicators.get() + ' ' + default_indicator,
+		ls_indicators_text,
 		sp_did_research.get(),
 		nt_sample.get()
 	]
@@ -133,7 +143,7 @@ def excel_func():
 			nm_sample_executor.get(),
 			nt_sample.get(),
 			nt_register.get(),
-			ls_indicators.get() + ' ' + default_indicator,
+			ls_indicators_text,
 			det_nd_prep_sample.get(),
 			det_nd_research_sample.get(),
 			sp_did_research.get(),
@@ -304,10 +314,11 @@ def on_closing_0(this_window):
 
 
 def history_window():
-	history_window_0 = tk.Toplevel(win) # нельзя нажимать в других окнах
+	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	history_window_0.title('Окно 1')
 	history_window_0.geometry('1000x500+1300+350')
 	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
 	def dict_from_csv():
 		csv_dict = {}
 		with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
