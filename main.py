@@ -215,7 +215,7 @@ def repeat_for_dt_st_1():
 		dt_st_sample_prep.insert(0, dt_st_research.get())
 	if dt_st_value_1.get() == 'No':
 		dt_st_sample_prep.delete(0, tk.END)
-
+print('hello world')
 
 def repeat_for_dt_st_2():
 	if dt_st_value_2.get() == 'Yes':
@@ -269,6 +269,8 @@ def start_window_0():
 	def delete():
 		selection = employee_listbox.curselection()
 		name_of_selection = employee_listbox.get(int(employee_listbox.curselection()[0]))
+		if name_of_selection == sp_did_research.get():
+			sp_did_research.delete(0, tk.END)
 		employees.remove(name_of_selection)
 		write_csv(employees)
 		# мы можем получить удаляемый элемент по индексу
@@ -287,6 +289,7 @@ def start_window_0():
 		print(value)
 
 	def add_to_enter_box():
+		sp_did_research.delete(0, tk.END)
 		selection = employee_listbox.curselection()
 		name_of_selection = employee_listbox.get(int(employee_listbox.curselection()[0]))
 		sp_did_research.insert(0, name_of_selection)
