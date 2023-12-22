@@ -9,9 +9,23 @@ import csv
 path_1 = ''
 path_2 = ''
 
+
+@staticmethod
+def keypress(event):
+	if event.keycode == 86:
+		event.widget.event_generate('<<Paste>>')
+	elif event.keycode == 67:
+		event.widget.event_generate('<<Copy>>')
+	elif event.keycode == 88:
+		event.widget.event_generate('<<Cut>>')
+	elif event.keycode == 65:
+		event.widget.event_generate('<<SelectAll>>')
+
+
 win = tk.Tk()
-win.geometry('1400x700+1300+350')
+win.geometry('1300x700+50+50')
 win.title('Программа')
+win.bind("<Control-KeyPress>", keypress)
 
 
 def get_info():
@@ -39,7 +53,25 @@ def get_info():
 	print('_________________________________________________')
 
 
+def write_history(row):
+	with open('datas/query_history.csv', 'a', newline='', encoding='utf-8') as f:
+		writer = csv.writer(f, delimiter='&')
+		writer.writerow(row)
+
+
 def excel_func():
+	if rg_nb_sample.get() == '':
+		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
+		return
+	dict_keys = []
+	with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter='&')
+		for row in csv_reader:
+			dict_keys.append(row[1])
+	if rg_nb_sample.get() in dict_keys:
+		messagebox.showerror('Ошибка', 'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
+		return
+
 	if path_1 == '':
 		path_sample_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_sample.xlsx'
 	else:
@@ -93,6 +125,31 @@ def excel_func():
 	book_2.save(filename=path_register_file)
 	path = os.path.realpath(path_register_file)
 
+	write_history(
+		[
+			nb_lab_journal.get(),
+			rg_nb_sample.get(),
+			name_sample.get(),
+			nm_sample_executor.get(),
+			nt_sample.get(),
+			nt_register.get(),
+			ls_indicators.get() + ' ' + default_indicator,
+			det_nd_prep_sample.get(),
+			det_nd_research_sample.get(),
+			sp_did_research.get(),
+			rsp_executor.get(),
+			dt_st_research.get(),
+			dt_st_sample_prep.get(),
+			dt_st_sampling.get(),
+			dt_get_receipt.get(),
+			dt_fn_research.get(),
+			dt_fn_sample_prep.get(),
+			dt_disposal.get(),
+			dt_issue_protocol.get(),
+			steps_sample.get(),
+			stp_research.get(),
+		]
+	)
 	os.startfile(path_sample_file)
 	os.startfile(path_register_file)
 	print('ready')
@@ -231,13 +288,13 @@ def start_window_0():
 	# текстовое поле и кнопка для добавления в список
 	employee_entry = ttk.Entry(new_window_0)
 	employee_entry.grid(column=0, row=0, padx=6, pady=6, sticky='ew')
-	ttk.Button(new_window_0, text="Добавить", command=add).grid(column=1, row=0, padx=6, pady=6)
+	ttk.Button(new_window_0, text="Добавить специалиста", command=add).grid(column=1, row=0, padx=6, pady=6)
 	employees = read_csv()
 	employees_var = tk.Variable(new_window_0, value=employees)
 	employee_listbox = tk.Listbox(new_window_0, listvariable=employees_var)
 	employee_listbox.grid(row=1, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
 
-	ttk.Button(new_window_0, text="Добавить", command=add_to_enter_box).grid(row=2, column=0, padx=5, pady=5)
+	ttk.Button(new_window_0, text="Применить", command=add_to_enter_box).grid(row=2, column=0, padx=5, pady=5)
 	ttk.Button(new_window_0, text="Удалить", command=delete).grid(row=2, column=1, padx=5, pady=5)
 
 
@@ -245,10 +302,90 @@ def on_closing_0(this_window):
 	if messagebox.askokcancel('Выход из приложения', 'Хотите ли вы выйти из приложения?'):
 		this_window.destroy()
 
+
+def history_window():
+	history_window_0 = tk.Toplevel(win) # нельзя нажимать в других окнах
+	history_window_0.title('Окно 1')
+	history_window_0.geometry('1000x500+1300+350')
+	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+	def dict_from_csv():
+		csv_dict = {}
+		with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
+			csv_reader = csv.reader(f, delimiter='&')
+			for row in csv_reader:
+				dict_key = row[1]
+				dict_values = row
+				csv_dict[dict_key] = dict_values
+		return csv_dict
+
+	def choose_code(evt):
+		t0['state'] = tk.NORMAL
+		t0.delete(0.0, tk.END)
+		w = evt.widget
+		value = w.get(int(w.curselection()[0]))
+		counter = 0
+		for i, row in enumerate(history_dict[value]):
+			t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+		t0['state'] = tk.DISABLED
+
+	def confirm_to_main():
+		variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
+		                     ls_indicators, det_nd_prep_sample, det_nd_research_sample, sp_did_research, rsp_executor,
+		                     dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
+		                     dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
+
+		for i in range(len(variables_for_row)):
+			variables_for_row[i].delete(0, tk.END)
+
+		selection = l0.curselection()
+		value = l0.get(int(l0.curselection()[0]))
+		for i in range(len(variables_for_row)):
+			variables_for_row[i].insert(0, history_dict[value][i])
+
+	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
+	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
+	                     'Примечания регистрационного журнала', 'Укажите перечень показателей через запятую',
+	                     'Укажите реквизиты НД для проведения пробоподготовки',
+	                     'Укажите реквизиты НД на метод исследования', 'ФИО специалиста проводившего исследование',
+	                     'ФИО ответственного исполнителя', 'Дата начала исследования', 'Дата начала пробоподготовки',
+	                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
+	                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
+	                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
+
+	t0 = tk.Text(history_window_0, width=100, state=tk.DISABLED)
+	t0.grid(row=0, column=1, padx=5)
+
+	history_dict = dict_from_csv()
+
+	history_samples = sorted(dict_from_csv(), reverse=False)
+
+	list_var = tk.Variable(value=history_samples)
+	l0 = tk.Listbox(history_window_0, listvariable=list_var,
+	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+	l0.grid(row=0, column=0)
+	l0.bind('<<ListboxSelect>>', choose_code)
+
+	b1 = tk.Button(history_window_0, text='Применить', font=('Arial', '14'), command=confirm_to_main)
+	b1.grid(row=1, column=1, pady=20)
+
+
+def clear_all_information():
+	variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
+	                     ls_indicators, det_nd_prep_sample, det_nd_research_sample, sp_did_research, rsp_executor,
+	                     dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
+	                     dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
+	for i in range(len(variables_for_row)):
+		variables_for_row[i].delete(0, tk.END)
+
+
 # двойное
 tk.Label(win, text='Номер лабораторного журнала').grid(row=0, column=0)
 nb_lab_journal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nb_lab_journal.grid(row=0, column=1)
+
+tk.Button(win, text='История', command=history_window).grid(row=0, column=3)
+
+tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=2, stick='w', padx=25)
 
 # двойное
 tk.Label(win, text='Регистрационный номер пробы').grid(row=1, column=0)
@@ -398,11 +535,11 @@ stp_research.grid(row=20, column=1)
 
 # Эксель файл 1
 tk.Label(win, text='Выбери эксель пробоподготовки 1').grid(row=21, column=0)
-tk.Button(text='Выбери файл', bd=5, font=('Arial', 10), command=get_file_1).grid(row=21, column=2)
+tk.Button(text='Выбери файл', bd=5, font=('Arial', 10), command=get_file_1).grid(row=21, column=2, stick='w', padx=25)
 
 # Эксель файл 2
 tk.Label(win, text='Выбери регистрационный эксель файл 2').grid(row=22, column=0)
-tk.Button(text='Выбери файл 2', bd=5, font=('Arial', 10), command=get_file_2).grid(row=22, column=2)
+tk.Button(text='Выбери файл 2', bd=5, font=('Arial', 10), command=get_file_2).grid(row=22, column=2, stick='w', padx=25)
 
 # Кнопка на сервер
 tk.Button(text='Пушь на сервак', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, pady=10)
