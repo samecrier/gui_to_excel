@@ -215,7 +215,10 @@ def repeat_for_dt_st_1():
 		dt_st_sample_prep.insert(0, dt_st_research.get())
 	if dt_st_value_1.get() == 'No':
 		dt_st_sample_prep.delete(0, tk.END)
+
+
 print('hello world')
+
 
 def repeat_for_dt_st_2():
 	if dt_st_value_2.get() == 'Yes':
@@ -346,10 +349,6 @@ def history_window():
 		t0['state'] = tk.DISABLED
 
 	def confirm_to_main():
-		variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
-		                     ls_indicators, det_nd_prep_sample, det_nd_research_sample, sp_did_research, rsp_executor,
-		                     dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
-		                     dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
 
 		for i in range(len(variables_for_row)):
 			variables_for_row[i].delete(0, tk.END)
@@ -387,47 +386,57 @@ def history_window():
 
 
 def clear_all_information():
-	variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
-	                     ls_indicators, det_nd_prep_sample, det_nd_research_sample, sp_did_research, rsp_executor,
-	                     dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
-	                     dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
 	for i in range(len(variables_for_row)):
 		variables_for_row[i].delete(0, tk.END)
+
+
+def clear_cell(index):
+	variables_for_row[index].delete(0, tk.END)
 
 
 # двойное
 tk.Label(win, text='Номер лабораторного журнала').grid(row=0, column=0)
 nb_lab_journal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nb_lab_journal.grid(row=0, column=1)
-
-tk.Button(win, text='История', command=history_window).grid(row=0, column=3)
-
-tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=2, stick='w', padx=25)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(0), borderwidth=0).grid(
+	row=0, column=2, stick='w', padx=5)
+tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=3, stick='w', padx=25)
+tk.Button(win, text='История', command=history_window).grid(row=0, column=4)
 
 # двойное
 tk.Label(win, text='Регистрационный номер пробы').grid(row=1, column=0)
 rg_nb_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 rg_nb_sample.grid(row=1, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(1), borderwidth=0).grid(
+	row=1, column=2, stick='w', padx=5)
 
 # двойное
 tk.Label(win, text='Наименование пробы(образца)').grid(row=2, column=0)
 name_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 name_sample.grid(row=2, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(2), borderwidth=0).grid(
+	row=2, column=2, stick='w', padx=5)
 
 # уникальное
 tk.Label(win, text='ФИО специалиста ответственного за пробоподготовку').grid(row=3, column=0)
 nm_sample_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nm_sample_executor.grid(row=3, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(3), borderwidth=0).grid(
+	row=3, column=2, stick='w', padx=5)
 
 # уникальное
 tk.Label(win, text='Примечания пробоподготовки').grid(row=4, column=0)
 nt_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nt_sample.grid(row=4, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(4), borderwidth=0).grid(
+	row=4, column=2, stick='w', padx=5)
 
 # уникальное
 tk.Label(win, text='Примечания регистрационного журнала').grid(row=5, column=0)
 nt_register = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nt_register.grid(row=5, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(5), borderwidth=0).grid(
+	row=5, column=2, stick='w', padx=5)
 
 # Перечень показателей
 default_indicator = 'не обнаружена'
@@ -435,9 +444,11 @@ list_of_indicators = ('не обнаружена', 'обнаружена')
 tk.Label(win, text='Укажите перечень показателей через запятую').grid(row=6, column=0)
 ls_indicators = tk.Entry(win, font=('Arial', 10), width=25)
 ls_indicators.grid(row=6, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(6), borderwidth=0).grid(
+	row=6, column=2, stick='w', padx=5)
 combo_indicators = ttk.Combobox(win, values=list_of_indicators)
 combo_indicators.current(0)
-combo_indicators.grid(row=6, column=2, stick='w')
+combo_indicators.grid(row=6, column=3, stick='w')
 combo_indicators.bind("<<ComboboxSelected>>", find_not_find)
 
 # Реквизиты НД для проведения пробоподготовки и на метод исследования
@@ -446,12 +457,16 @@ repeat_for_nd_value.set('No')
 tk.Label(win, text='Укажите реквизиты НД для проведения пробоподготовки').grid(row=7, column=0)
 det_nd_prep_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 det_nd_prep_sample.grid(row=7, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(7), borderwidth=0).grid(
+	row=7, column=2, stick='w', padx=5)
 nd_check_button = tk.Checkbutton(win, text='пов. для рекв. методов исследования', command=repeat_for_nd,
                                  variable=repeat_for_nd_value, offvalue='No', onvalue='Yes')
-nd_check_button.grid(row=7, column=2)
+nd_check_button.grid(row=7, column=3)
 tk.Label(win, text='Укажите реквизиты НД на метод исследования').grid(row=8, column=0)
 det_nd_research_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 det_nd_research_sample.grid(row=8, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(8), borderwidth=0).grid(
+	row=8, column=2, stick='w', padx=5)
 
 # ФИО специалиста и ответственный исполнитель
 repeat_for_sp_value = tk.StringVar()
@@ -459,13 +474,17 @@ repeat_for_sp_value.set('No')
 tk.Label(win, text='ФИО специалиста проводившего исследование').grid(row=9, column=0)
 sp_did_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 sp_did_research.grid(row=9, column=1)
-tk.Button(win, text='Выбрать специалистиа', command=start_window_0).grid(row=9, column=2)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(9), borderwidth=0).grid(
+	row=9, column=2, stick='w', padx=5)
+tk.Button(win, text='Выбрать специалиста', command=start_window_0).grid(row=9, column=3)
 sp_check_button = tk.Checkbutton(win, text='пов. для ответственного исполнителя', command=repeat_for_sp,
                                  variable=repeat_for_sp_value, offvalue='No', onvalue='Yes')
-sp_check_button.grid(row=9, column=3)
+sp_check_button.grid(row=9, column=4)
 tk.Label(win, text='ФИО ответственного исполнителя').grid(row=10, column=0)
 rsp_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 rsp_executor.grid(row=10, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(10),
+          borderwidth=0).grid(row=10, column=2, stick='w', padx=5)
 
 # Даты начала
 
@@ -473,6 +492,8 @@ rsp_executor.grid(row=10, column=1)
 tk.Label(win, text='Дата начала исследования').grid(row=11, column=0)
 dt_st_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_st_research.grid(row=11, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(11),
+          borderwidth=0).grid(row=11, column=2, stick='w', padx=5)
 
 dt_st_value_1 = tk.StringVar()
 dt_st_value_2 = tk.StringVar()
@@ -482,31 +503,39 @@ dt_st_value_2.set('No')
 dt_st_value_3.set('No')
 dt_st_check_button_1 = tk.Checkbutton(win, text='пов. начало пробоподготовки', command=repeat_for_dt_st_1,
                                       variable=dt_st_value_1, offvalue='No', onvalue='Yes')
-dt_st_check_button_1.grid(row=11, column=2, stick='w')
+dt_st_check_button_1.grid(row=11, column=3, stick='w')
 dt_st_check_button_2 = tk.Checkbutton(win, text='пов. дата отбора пробы (образца)', command=repeat_for_dt_st_2,
                                       variable=dt_st_value_2, offvalue='No', onvalue='Yes')
-dt_st_check_button_2.grid(row=11, column=3, stick='w')
+dt_st_check_button_2.grid(row=11, column=4, stick='w')
 dt_st_check_button_3 = tk.Checkbutton(win, text='пов. дата поступления', command=repeat_for_dt_st_3,
                                       variable=dt_st_value_3, offvalue='No', onvalue='Yes')
-dt_st_check_button_3.grid(row=11, column=4, stick='w')
+dt_st_check_button_3.grid(row=11, column=5, stick='w')
 
 tk.Label(win, text='Дата начала пробоподготовки').grid(row=12, column=0)
 dt_st_sample_prep = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_st_sample_prep.grid(row=12, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(12),
+          borderwidth=0).grid(row=12, column=2, stick='w', padx=5)
 
 tk.Label(win, text='Дата отбора пробы (образца)').grid(row=13, column=0)
 dt_st_sampling = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_st_sampling.grid(row=13, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(13),
+          borderwidth=0).grid(row=13, column=2, stick='w', padx=5)
 
 tk.Label(win, text='Дата поступления').grid(row=14, column=0)
 dt_get_receipt = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_get_receipt.grid(row=14, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(14),
+          borderwidth=0).grid(row=14, column=2, stick='w', padx=5)
 
 # Даты окончания
 
 tk.Label(win, text='Дата окончания исследования').grid(row=15, column=0)
 dt_fn_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_fn_research.grid(row=15, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(15),
+          borderwidth=0).grid(row=15, column=2, stick='w', padx=5)
 
 dt_fn_value_1 = tk.StringVar()
 dt_fn_value_2 = tk.StringVar()
@@ -517,25 +546,31 @@ dt_fn_value_3.set('No')
 
 dt_st_check_button_1 = tk.Checkbutton(win, text='пов. дату окончания пробоподготовки', command=repeat_for_dt_fn_1,
                                       variable=dt_fn_value_1, offvalue='No', onvalue='Yes')
-dt_st_check_button_1.grid(row=15, column=2, stick='w')
+dt_st_check_button_1.grid(row=15, column=3, stick='w')
 dt_st_check_button_2 = tk.Checkbutton(win, text='пов. дату утилизации пробы/сведения о консервации',
                                       command=repeat_for_dt_fn_2, variable=dt_fn_value_2, offvalue='No', onvalue='Yes')
-dt_st_check_button_2.grid(row=15, column=3, stick='w')
+dt_st_check_button_2.grid(row=15, column=4, stick='w')
 dt_st_check_button_3 = tk.Checkbutton(win, text='пов. дату выписки листа прокола', command=repeat_for_dt_fn_3,
                                       variable=dt_fn_value_3, offvalue='No', onvalue='Yes')
-dt_st_check_button_3.grid(row=15, column=4, stick='w')
+dt_st_check_button_3.grid(row=15, column=5, stick='w')
 
 tk.Label(win, text='Дата окончания пробоподготовки').grid(row=16, column=0)
 dt_fn_sample_prep = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_fn_sample_prep.grid(row=16, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(16),
+          borderwidth=0).grid(row=16, column=2, stick='w', padx=5)
 
 tk.Label(win, text='Дата утилизации пробы/сведения о консервации').grid(row=17, column=0)
 dt_disposal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_disposal.grid(row=17, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(17),
+          borderwidth=0).grid(row=17, column=2, stick='w', padx=5)
 
 tk.Label(win, text='Дата выписки листа протокола').grid(row=18, column=0)
 dt_issue_protocol = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_issue_protocol.grid(row=18, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(18),
+          borderwidth=0).grid(row=18, column=2, stick='w', padx=5)
 
 # Этапы исследования
 repeat_for_stp_value = tk.StringVar()
@@ -543,27 +578,35 @@ repeat_for_stp_value.set('No')
 tk.Label(win, text='Этапы пробоподготовки').grid(row=19, column=0)
 steps_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 steps_sample.grid(row=19, column=1)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(19),
+          borderwidth=0).grid(row=19, column=2, stick='w', padx=5)
 stp_check_button = tk.Checkbutton(win, text='автом. этапы исследования', command=repeat_for_stp,
                                   variable=repeat_for_stp_value, offvalue='No', onvalue='Yes')
-stp_check_button.grid(row=19, column=2)
+stp_check_button.grid(row=19, column=3)
 tk.Label(win, text='Этапы исследования').grid(row=20, column=0)
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(20),
+          borderwidth=0).grid(row=20, column=2, stick='w', padx=5)
 stp_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 stp_research.grid(row=20, column=1)
 
 # Эксель файл 1
 tk.Label(win, text='Выбери эксель пробоподготовки 1').grid(row=21, column=0)
-tk.Button(text='Выбери файл', bd=5, font=('Arial', 10), command=get_file_1).grid(row=21, column=2, stick='w', padx=25)
+tk.Button(text='Выбери файл', bd=5, font=('Arial', 10), command=get_file_1).grid(row=21, column=3, stick='w', padx=25)
 
 # Эксель файл 2
 tk.Label(win, text='Выбери регистрационный эксель файл 2').grid(row=22, column=0)
-tk.Button(text='Выбери файл 2', bd=5, font=('Arial', 10), command=get_file_2).grid(row=22, column=2, stick='w', padx=25)
+tk.Button(text='Выбери файл 2', bd=5, font=('Arial', 10), command=get_file_2).grid(row=22, column=3, stick='w', padx=25)
 op_xl_button_value = tk.StringVar()
 op_xl_button_value.set('Yes')
 print(op_xl_button_value.get())
 op_xl_button = tk.Checkbutton(win, text='открыть ли эксель', variable=op_xl_button_value, offvalue='No', onvalue='Yes')
-op_xl_button.grid(row=22, column=3)
+op_xl_button.grid(row=22, column=4)
 
 # Кнопка на сервер
 tk.Button(text='Пушь на сервак', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, pady=10)
 
+variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
+                     ls_indicators, det_nd_prep_sample, det_nd_research_sample, sp_did_research, rsp_executor,
+                     dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
+                     dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
 win.mainloop()
