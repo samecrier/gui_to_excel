@@ -37,7 +37,7 @@ def get_info():
 	print(f'Примечания регистрационного журнала - {nt_register.get()}')
 	print(f'Перечень показателей через запятую - {ls_indicators.get()}')
 	print(f'Реквизиты НД для проведения пробоподготовки - {det_nd_prep_sample.get()}')
-	print(f'Реквизиты НД на метод исследования - {det_nd_research_sample.get()}')
+	print(f'Реквизиты НД на метод исследования - {det_nd_research.get()}')
 	print(f'ФИО специалиста проводившего исследование - {sp_did_research.get()}')
 	print(f'ФИО ответственного исполнителя - {rsp_executor.get()}')
 	print(f'Дата начала исследования - {dt_st_research.get()}')
@@ -100,7 +100,7 @@ def excel_func():
 		dt_st_sample_prep.get(),
 		dt_fn_sample_prep.get(),
 		nm_sample_executor.get(),
-		det_nd_research_sample.get(),
+		det_nd_research.get(),
 		stp_research.get(),
 		dt_st_research.get(),
 		dt_fn_research.get(),
@@ -141,7 +141,7 @@ def excel_func():
 			nt_register.get(),
 			ls_indicators_text,
 			det_nd_prep_sample.get(),
-			det_nd_research_sample.get(),
+			det_nd_research.get(),
 			sp_did_research.get(),
 			rsp_executor.get(),
 			dt_st_research.get(),
@@ -187,61 +187,91 @@ def get_file_1():
 	e1_path.insert(0, path_1)
 	e1_path['state'] = tk.DISABLED
 
+
 def get_file_2():
 	global path_2
 	e2_path['state'] = tk.NORMAL
 	path_2 = filedialog.askopenfilename()
 	# tk.Label(win, text=path_2, anchor='w', width=20, height=1).grid(row=22, column=1, stick='w')
 	e2_path.insert(0, path_2)
-	e2_path['state']= tk.DISABLED
+	e2_path['state'] = tk.DISABLED
+
 
 def repeat_for_nd():
+	det_nd_research.delete(0, tk.END)
 	if repeat_for_nd_value.get() == 'Yes':
-		det_nd_research_sample.insert(0, det_nd_prep_sample.get())
-	if repeat_for_nd_value.get() == 'No':
-		det_nd_research_sample.delete(0, tk.END)
+		det_nd_research.insert(0, det_nd_prep_sample.get())
+
+
+def nd_check_button_off(evt):
+	if det_nd_research.get() != det_nd_prep_sample.get():
+		repeat_for_nd_value.set('No')
 
 
 def repeat_for_dt_st_1():
+	dt_st_sample_prep.delete(0, tk.END)
 	if dt_st_value_1.get() == 'Yes':
 		dt_st_sample_prep.insert(0, dt_st_research.get())
-	if dt_st_value_1.get() == 'No':
-		dt_st_sample_prep.delete(0, tk.END)
+
+
+def dt_st_1_check_off(evt):
+	if dt_st_sample_prep.get() != dt_st_research.get():
+		dt_st_value_1.set('No')
 
 
 def repeat_for_dt_st_2():
+	dt_st_sampling.delete(0, tk.END)
 	if dt_st_value_2.get() == 'Yes':
 		dt_st_sampling.insert(0, dt_st_research.get())
-	if dt_st_value_2.get() == 'No':
-		dt_st_sampling.delete(0, tk.END)
+
+
+def dt_st_2_check_off(evt):
+	if dt_st_sampling.get() != dt_st_research.get():
+		dt_st_value_2.set('No')
 
 
 def repeat_for_dt_st_3():
+	dt_get_receipt.delete(0, tk.END)
 	if dt_st_value_3.get() == 'Yes':
 		dt_get_receipt.insert(0, dt_st_research.get())
-	if dt_st_value_3.get() == 'No':
-		dt_get_receipt.delete(0, tk.END)
+
+
+def dt_st_3_check_off(evt):
+	if dt_get_receipt.get() != dt_st_research.get():
+		dt_st_value_3.set('No')
 
 
 def repeat_for_dt_fn_1():
+	dt_fn_sample_prep.delete(0, tk.END)
 	if dt_fn_value_1.get() == 'Yes':
 		dt_fn_sample_prep.insert(0, dt_fn_research.get())
-	if dt_fn_value_1.get() == 'No':
-		dt_fn_sample_prep.delete(0, tk.END)
+
+
+def dt_fn_1_check_off(evt):
+	if dt_fn_sample_prep.get() != dt_fn_research.get():
+		dt_fn_value_1.set('No')
 
 
 def repeat_for_dt_fn_2():
+	dt_disposal.delete(0, tk.END)
 	if dt_fn_value_2.get() == 'Yes':
 		dt_disposal.insert(0, dt_fn_research.get())
-	if dt_fn_value_2.get() == 'No':
-		dt_disposal.delete(0, tk.END)
+
+
+def dt_fn_2_check_off(evt):
+	if dt_disposal.get() != dt_fn_research.get():
+		dt_fn_value_2.set('No')
 
 
 def repeat_for_dt_fn_3():
+	dt_issue_protocol.delete(0, tk.END)
 	if dt_fn_value_3.get() == 'Yes':
 		dt_issue_protocol.insert(0, dt_fn_research.get())
-	if dt_fn_value_3.get() == 'No':
-		dt_issue_protocol.delete(0, tk.END)
+
+
+def dt_fn_3_check_off(evt):
+	if dt_issue_protocol.get() != dt_fn_research.get():
+		dt_fn_value_3.set('No')
 
 
 def repeat_for_stp():
@@ -480,8 +510,10 @@ det_nd_prep_sample.grid(row=7, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(7), borderwidth=0).grid(
 	row=7, column=2, stick='w', padx=5)
 tk.Label(win, text='Реквизиты НД на метод исследования').grid(row=8, column=0, stick='e')
-det_nd_research_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
-det_nd_research_sample.grid(row=8, column=1)
+det_nd_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
+det_nd_research.bind("<FocusIn>", nd_check_button_off)
+det_nd_research.bind("<FocusOut>", nd_check_button_off)
+det_nd_research.grid(row=8, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(8), borderwidth=0).grid(
 	row=8, column=2, stick='w', padx=5)
 nd_check_button = tk.Checkbutton(win, text='повторить реквизиты НД пробоподготовки', command=repeat_for_nd,
@@ -522,6 +554,8 @@ dt_st_value_3.set('No')
 tk.Label(win, text='Дата начала пробоподготовки').grid(row=12, column=0, stick='e')
 dt_st_sample_prep = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_st_sample_prep.grid(row=12, column=1)
+dt_st_sample_prep.bind("<FocusIn>", dt_st_1_check_off)
+dt_st_sample_prep.bind("<FocusOut>", dt_st_1_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(12),
           borderwidth=0).grid(row=12, column=2, stick='w', padx=5)
 dt_st_check_button_1 = tk.Checkbutton(win, text='повторить дату начала исследования', command=repeat_for_dt_st_1,
@@ -531,6 +565,8 @@ dt_st_check_button_1.grid(row=12, column=3, stick='w')
 tk.Label(win, text='Дата отбора пробы (образца)').grid(row=13, column=0, stick='e')
 dt_st_sampling = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_st_sampling.grid(row=13, column=1)
+dt_st_sampling.bind("<FocusIn>", dt_st_2_check_off)
+dt_st_sampling.bind("<FocusOut>", dt_st_2_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(13),
           borderwidth=0).grid(row=13, column=2, stick='w', padx=5)
 dt_st_check_button_2 = tk.Checkbutton(win, text='повторить дату начала исследования', command=repeat_for_dt_st_2,
@@ -540,6 +576,8 @@ dt_st_check_button_2.grid(row=13, column=3, stick='w')
 tk.Label(win, text='Дата поступления').grid(row=14, column=0, stick='e')
 dt_get_receipt = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_get_receipt.grid(row=14, column=1)
+dt_get_receipt.bind("<FocusIn>", dt_st_3_check_off)
+dt_get_receipt.bind("<FocusOut>", dt_st_3_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(14),
           borderwidth=0).grid(row=14, column=2, stick='w', padx=5)
 dt_st_check_button_3 = tk.Checkbutton(win, text='повторить дату начала исследования', command=repeat_for_dt_st_3,
@@ -564,6 +602,8 @@ dt_fn_value_3.set('No')
 tk.Label(win, text='Дата окончания пробоподготовки').grid(row=16, column=0, stick='e')
 dt_fn_sample_prep = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_fn_sample_prep.grid(row=16, column=1)
+dt_fn_sample_prep.bind("<FocusIn>", dt_fn_1_check_off)
+dt_fn_sample_prep.bind("<FocusOut>", dt_fn_1_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(16),
           borderwidth=0).grid(row=16, column=2, stick='w', padx=5)
 dt_st_check_button_1 = tk.Checkbutton(win, text='повторить дату окончания исследования', command=repeat_for_dt_fn_1,
@@ -573,6 +613,8 @@ dt_st_check_button_1.grid(row=16, column=3, stick='w')
 tk.Label(win, text='Дата утилизации пробы/сведения о консервации').grid(row=17, column=0, stick='e')
 dt_disposal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_disposal.grid(row=17, column=1)
+dt_disposal.bind("<FocusIn>", dt_fn_2_check_off)
+dt_disposal.bind("<FocusOut>", dt_fn_2_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(17),
           borderwidth=0).grid(row=17, column=2, stick='w', padx=5)
 dt_st_check_button_2 = tk.Checkbutton(win, text='повторить дату окончания исследования',
@@ -587,7 +629,8 @@ tk.Button(win, text='x', activeforeground='red', foreground='black', command=lam
 dt_st_check_button_3 = tk.Checkbutton(win, text='повторить дату окончания исследования', command=repeat_for_dt_fn_3,
                                       variable=dt_fn_value_3, offvalue='No', onvalue='Yes')
 dt_st_check_button_3.grid(row=18, column=3, stick='w')
-
+dt_issue_protocol.bind("<FocusIn>", dt_fn_3_check_off)
+dt_issue_protocol.bind("<FocusOut>", dt_fn_3_check_off)
 # Этапы исследования
 repeat_for_stp_value = tk.StringVar()
 repeat_for_stp_value.set('No')
@@ -609,14 +652,14 @@ stp_research.grid(row=20, column=1)
 tk.Label(win, text='Выбери эксель пробоподготовки 1').grid(row=21, column=0, stick='e')
 e1_path = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25, state=tk.DISABLED)
 tk.Button(text='Выберите файл', bd=5, font=('Arial', 10), command=get_file_1).grid(row=21, column=2, columnspan=2,
-                                                                                 stick='w', padx=3)
+                                                                                   stick='w', padx=3)
 e1_path.grid(row=21, column=1, stick='w')
 # Эксель файл 2
 tk.Label(win, text='Выбери регистрационный эксель файл 2').grid(row=22, column=0, stick='e')
 e2_path = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25, state=tk.DISABLED)
 e2_path.grid(row=22, column=1, stick='w')
 tk.Button(text='Выберите файл 2', bd=5, font=('Arial', 10), command=get_file_2).grid(row=22, column=2, columnspan=2,
-                                                                                   stick='w', padx=3)
+                                                                                     stick='w', padx=3)
 op_xl_button_value = tk.StringVar()
 op_xl_button_value.set('No')
 op_xl_button = tk.Checkbutton(win, text='открыть эксель', variable=op_xl_button_value, offvalue='No', onvalue='Yes')
@@ -627,7 +670,7 @@ tk.Button(text='Пушь на сервак', bd=5, font=('Arial', 10), command=e
                                                                                     pady=10)
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
-                     ls_indicators, det_nd_prep_sample, det_nd_research_sample, sp_did_research, rsp_executor,
+                     ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
                      dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
                      dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
 win.mainloop()
