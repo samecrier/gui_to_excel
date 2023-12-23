@@ -165,16 +165,16 @@ def excel_func():
 	print('Сохранение в эксель с открытием ')
 
 
-def read_csv():
-	with open('datas/did_research.csv', 'r', encoding='utf-8', newline='') as f:
+def read_csv(filename):
+	with open(filename, 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter=';')
 		for row in csv_reader:
 			return row
 
 
-def write_csv(row):
+def write_csv(row, filename):
 	row = sorted(row)
-	with open('datas/did_research.csv', 'w', newline='', encoding='utf-8') as f:
+	with open(filename, 'w', newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter=';')
 		writer.writerow(row)
 
@@ -275,6 +275,7 @@ def dt_fn_3_check_off(evt):
 
 
 def repeat_for_stp():
+	global stp_research_check_name
 	dict_for_end = {
 		1: 'препарат', 2: 'препарата', 3: 'препарата', 4: 'препарата', 5: 'препаратов', 6: 'препаратов',
 		7: 'препаратов', 8: 'препаратов', 9: 'препаратов', 10: 'препаратов', 11: 'препаратов', 12: 'препаратов',
@@ -298,6 +299,7 @@ def repeat_for_stp():
 		stp_research_result = steps_sample.get().split('; ')[-1]
 		stp_research_result_check_digit = stp_research_result.split(' ')[0]
 		if stp_research_result_check_digit[-2:].isdigit():
+			stp_research.delete(0, tk.END)
 			digit_for_end = int(stp_research_result_check_digit[-2:])
 			preparat_end = dict_for_end[digit_for_end]
 			if preparat_end == 'препарат':
@@ -305,12 +307,17 @@ def repeat_for_stp():
 			else:
 				stp_research_name = 'исследование выполнено; ' + f'{digit_for_end}' + ' ' + preparat_end + ' исследованы'
 			stp_research.insert(0, stp_research_name)
+			stp_research_check_name = stp_research_name
+
 		else:
 			messagebox.showerror('Ошибка',
 			                     'Неправильная форма этапов пробоподготовки, введите результаты иследования вручную')
+			repeat_for_stp_value.set('No')
 
-	if repeat_for_stp_value.get() == 'No':
-		stp_research.delete(0, tk.END)
+
+def for_stp_check_off(evt):
+	if stp_research.get() != stp_research_check_name:
+		repeat_for_stp_value.set('No')
 
 
 def find_not_find(eventObject):
@@ -318,14 +325,14 @@ def find_not_find(eventObject):
 	default_indicator = eventObject.widget.get()
 
 
-def start_window_0():
+def start_window_0(variable, filename):
 	def delete():
 		selection = employee_listbox.curselection()
 		name_of_selection = employee_listbox.get(int(employee_listbox.curselection()[0]))
-		if name_of_selection == sp_did_research.get():
-			sp_did_research.delete(0, tk.END)
+		if name_of_selection == variable.get():
+			variable.delete(0, tk.END)
 		employees.remove(name_of_selection)
-		write_csv(employees)
+		write_csv(employees, filename)
 		# мы можем получить удаляемый элемент по индексу
 		# selected_language = employee_listbox.get(selection[0])
 		employee_listbox.delete(selection[0])
@@ -333,7 +340,15 @@ def start_window_0():
 	# добавление нового элемента
 	def add():
 		new_employee = employee_entry.get()
-		write_csv(employees + [new_employee])
+		list_employees = read_csv(filename)
+		if list_employees:
+			if new_employee not in list_employees:
+				write_csv(list_employees + [new_employee], filename)
+			else:
+				messagebox.showerror('Ошибка', 'Такой сотрудник уже в списке!')
+				return
+		else:
+			write_csv([new_employee], filename)
 		employee_listbox.insert(0, new_employee)
 
 	def show_print(evt):
@@ -341,10 +356,10 @@ def start_window_0():
 		value = w.get(int(w.curselection()[0]))
 
 	def add_to_enter_box():
-		sp_did_research.delete(0, tk.END)
+		variable.delete(0, tk.END)
 		selection = employee_listbox.curselection()
 		name_of_selection = employee_listbox.get(int(employee_listbox.curselection()[0]))
-		sp_did_research.insert(0, name_of_selection)
+		variable.insert(0, name_of_selection)
 		new_window_0.destroy()
 
 	new_window_0 = tk.Toplevel(win)
@@ -357,7 +372,7 @@ def start_window_0():
 	employee_entry = ttk.Entry(new_window_0)
 	employee_entry.grid(column=0, stick='e', row=0, padx=6, pady=6, sticky='ew')
 	ttk.Button(new_window_0, text="Добавить специалиста", command=add).grid(column=1, row=0, padx=6, pady=6)
-	employees = read_csv()
+	employees = read_csv(filename)
 	employees_var = tk.Variable(new_window_0, value=employees)
 	employee_listbox = tk.Listbox(new_window_0, listvariable=employees_var)
 	employee_listbox.grid(row=1, column=0, stick='e', columnspan=2, sticky='ew', padx=5, pady=5)
@@ -450,8 +465,8 @@ nb_lab_journal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nb_lab_journal.grid(row=0, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(0), borderwidth=0).grid(
 	row=0, column=2, stick='w', padx=5)
-tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=3, stick='w', padx=25)
-tk.Button(win, text='История', command=history_window).grid(row=0, column=4)
+tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=3, stick='w')
+tk.Button(win, text='История', command=history_window).grid(row=0, column=4, stick='w')
 
 # двойное
 tk.Label(win, text='Регистрационный номер пробы').grid(row=1, column=0, stick='e')
@@ -473,6 +488,9 @@ nm_sample_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25
 nm_sample_executor.grid(row=3, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(3), borderwidth=0).grid(
 	row=3, column=2, stick='w', padx=5)
+tk.Button(win, text='Выбрать специалиста',
+          command=lambda: start_window_0(nm_sample_executor, 'datas/nm_sample_executor.csv')).grid(row=3, column=3,
+                                                                                                   stick='w')
 
 # уникальное
 tk.Label(win, text='Примечания пробоподготовки').grid(row=4, column=0, stick='e')
@@ -528,12 +546,16 @@ sp_did_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 sp_did_research.grid(row=9, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(9), borderwidth=0).grid(
 	row=9, column=2, stick='w', padx=5)
-tk.Button(win, text='Выбрать специалиста', command=start_window_0).grid(row=9, column=3, stick='w')
+tk.Button(win, text='Выбрать специалиста',
+          command=lambda: start_window_0(sp_did_research, 'datas/sp_did_research.csv')).grid(row=9, column=3, stick='w')
+
 tk.Label(win, text='ФИО ответственного исполнителя').grid(row=10, column=0, stick='e')
 rsp_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 rsp_executor.grid(row=10, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(10),
           borderwidth=0).grid(row=10, column=2, stick='w', padx=5)
+tk.Button(win, text='Выбрать специалиста', command=lambda: start_window_0(rsp_executor, 'datas/rsp_executor.csv')).grid(
+	row=10, column=3, stick='w')
 
 # Даты начала
 
@@ -639,15 +661,17 @@ steps_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 steps_sample.grid(row=19, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(19),
           borderwidth=0).grid(row=19, column=2, stick='w', padx=5)
-stp_check_button = tk.Checkbutton(win, text='заполнить этапы исследования', command=repeat_for_stp,
-                                  variable=repeat_for_stp_value, offvalue='No', onvalue='Yes')
-stp_check_button.grid(row=19, column=3, stick='w')
 tk.Label(win, text='Этапы исследования').grid(row=20, column=0, stick='e')
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(20),
           borderwidth=0).grid(row=20, column=2, stick='w', padx=5)
 stp_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 stp_research.grid(row=20, column=1)
-
+stp_check_button = tk.Checkbutton(win, text='заполнить этапы исследования', command=repeat_for_stp,
+                                  variable=repeat_for_stp_value, offvalue='No', onvalue='Yes')
+stp_research_check_name = ''  # глобальная переменная для сверки и работы с галочкой
+stp_check_button.grid(row=20, column=3, stick='w')
+stp_research.bind("<FocusIn>", for_stp_check_off)
+stp_research.bind("<FocusOut>", for_stp_check_off)
 # Эксель файл 1
 tk.Label(win, text='Выбери эксель пробоподготовки 1').grid(row=21, column=0, stick='e')
 e1_path = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25, state=tk.DISABLED)
@@ -663,14 +687,15 @@ tk.Button(text='Выберите файл 2', bd=5, font=('Arial', 10), command=
 op_xl_button_value = tk.StringVar()
 op_xl_button_value.set('No')
 op_xl_button = tk.Checkbutton(win, text='открыть эксель', variable=op_xl_button_value, offvalue='No', onvalue='Yes')
-op_xl_button.grid(row=22, column=4)
+op_xl_button.grid(row=22, column=4, stick='w')
 
 # Кнопка на сервер
-tk.Button(text='Пушь на сервак', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, stick='e',
-                                                                                    pady=10)
+tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, stick='e',
+                                                                                      pady=10)
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
                      ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
                      dt_st_research, dt_st_sample_prep, dt_st_sampling, dt_get_receipt, dt_fn_research,
                      dt_fn_sample_prep, dt_disposal, dt_issue_protocol, steps_sample, stp_research, ]
+
 win.mainloop()
