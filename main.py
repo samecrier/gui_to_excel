@@ -203,7 +203,7 @@ def repeat_for_nd():
 		det_nd_research.insert(0, det_nd_prep_sample.get())
 
 
-def nd_check_button_off(evt):
+def nd_check_button_off(evt=None):
 	if det_nd_research.get() != det_nd_prep_sample.get():
 		repeat_for_nd_value.set('No')
 
@@ -214,7 +214,7 @@ def repeat_for_dt_st_1():
 		dt_st_sample_prep.insert(0, dt_st_research.get())
 
 
-def dt_st_1_check_off(evt):
+def dt_st_1_check_off(evt=None):
 	if dt_st_sample_prep.get() != dt_st_research.get():
 		dt_st_value_1.set('No')
 
@@ -225,7 +225,7 @@ def repeat_for_dt_st_2():
 		dt_st_sampling.insert(0, dt_st_research.get())
 
 
-def dt_st_2_check_off(evt):
+def dt_st_2_check_off(evt=None):
 	if dt_st_sampling.get() != dt_st_research.get():
 		dt_st_value_2.set('No')
 
@@ -236,10 +236,14 @@ def repeat_for_dt_st_3():
 		dt_get_receipt.insert(0, dt_st_research.get())
 
 
-def dt_st_3_check_off(evt):
+def dt_st_3_check_off(evt=None):
 	if dt_get_receipt.get() != dt_st_research.get():
 		dt_st_value_3.set('No')
 
+def check_st_functions(evt):
+	dt_st_1_check_off()
+	dt_st_2_check_off()
+	dt_st_3_check_off()
 
 def repeat_for_dt_fn_1():
 	dt_fn_sample_prep.delete(0, tk.END)
@@ -247,7 +251,7 @@ def repeat_for_dt_fn_1():
 		dt_fn_sample_prep.insert(0, dt_fn_research.get())
 
 
-def dt_fn_1_check_off(evt):
+def dt_fn_1_check_off(evt=None):
 	if dt_fn_sample_prep.get() != dt_fn_research.get():
 		dt_fn_value_1.set('No')
 
@@ -258,7 +262,7 @@ def repeat_for_dt_fn_2():
 		dt_disposal.insert(0, dt_fn_research.get())
 
 
-def dt_fn_2_check_off(evt):
+def dt_fn_2_check_off(evt=None):
 	if dt_disposal.get() != dt_fn_research.get():
 		dt_fn_value_2.set('No')
 
@@ -269,13 +273,19 @@ def repeat_for_dt_fn_3():
 		dt_issue_protocol.insert(0, dt_fn_research.get())
 
 
-def dt_fn_3_check_off(evt):
+def dt_fn_3_check_off(evt=None):
 	if dt_issue_protocol.get() != dt_fn_research.get():
 		dt_fn_value_3.set('No')
 
 
+def check_fn_functions(evt):
+	dt_fn_1_check_off()
+	dt_fn_2_check_off()
+	dt_fn_3_check_off()
+
+
 def repeat_for_stp():
-	global stp_research_check_name
+	global glb_stp_research_check_name, glb_stp_number_of_research
 	dict_for_end = {
 		1: 'препарат', 2: 'препарата', 3: 'препарата', 4: 'препарата', 5: 'препаратов', 6: 'препаратов',
 		7: 'препаратов', 8: 'препаратов', 9: 'препаратов', 10: 'препаратов', 11: 'препаратов', 12: 'препаратов',
@@ -303,11 +313,13 @@ def repeat_for_stp():
 			digit_for_end = int(stp_research_result_check_digit[-2:])
 			preparat_end = dict_for_end[digit_for_end]
 			if preparat_end == 'препарат':
-				stp_research_name = 'исследование выполнено; ' + f'{digit_for_end}' + ' ' + preparat_end + ' исследован'
+				stp_research_name = 'исследование выполнено; ' + f'{stp_research_result_check_digit}' + ' ' + preparat_end + ' исследован'
 			else:
-				stp_research_name = 'исследование выполнено; ' + f'{digit_for_end}' + ' ' + preparat_end + ' исследованы'
+				stp_research_name = 'исследование выполнено; ' + f'{stp_research_result_check_digit}' + ' ' + preparat_end + ' исследованы'
 			stp_research.insert(0, stp_research_name)
-			stp_research_check_name = stp_research_name
+			glb_stp_research_check_name = stp_research_name
+			glb_stp_number_of_research = stp_research_result_check_digit
+			print('glb stp number-', glb_stp_number_of_research)
 
 		else:
 			messagebox.showerror('Ошибка',
@@ -315,14 +327,22 @@ def repeat_for_stp():
 			repeat_for_stp_value.set('No')
 
 
-def for_stp_check_off(evt):
-	if stp_research.get() != stp_research_check_name:
+def for_stp_check_off(evt=None):
+	if stp_research.get() != glb_stp_research_check_name:
 		repeat_for_stp_value.set('No')
 
 
-def find_not_find(eventObject):
+def check_stp_function(evt=None):
+	if glb_stp_number_of_research == '':
+		return
+	stp_string = steps_sample.get().split('; ')[-1].split(' ')[0]
+	if glb_stp_number_of_research != stp_string:
+		repeat_for_stp_value.set('No')
+
+
+def find_not_find(evt):
 	global default_indicator
-	default_indicator = eventObject.widget.get()
+	default_indicator = evt.widget.get()
 
 
 def start_window_0(variable, filename):
@@ -525,6 +545,7 @@ repeat_for_nd_value.set('No')
 tk.Label(win, text='Реквизиты НД для проведения пробоподготовки').grid(row=7, column=0, stick='e')
 det_nd_prep_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 det_nd_prep_sample.grid(row=7, column=1)
+det_nd_prep_sample.bind("<FocusOut>", nd_check_button_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(7), borderwidth=0).grid(
 	row=7, column=2, stick='w', padx=5)
 tk.Label(win, text='Реквизиты НД на метод исследования').grid(row=8, column=0, stick='e')
@@ -563,6 +584,7 @@ tk.Button(win, text='Выбрать специалиста', command=lambda: sta
 tk.Label(win, text='Дата начала исследования').grid(row=11, column=0, stick='e')
 dt_st_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_st_research.grid(row=11, column=1)
+dt_st_research.bind("<FocusOut>", check_st_functions)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(11),
           borderwidth=0).grid(row=11, column=2, stick='w', padx=5)
 
@@ -611,6 +633,7 @@ dt_st_check_button_3.grid(row=14, column=3, stick='w')
 tk.Label(win, text='Дата окончания исследования').grid(row=15, column=0, stick='e')
 dt_fn_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_fn_research.grid(row=15, column=1)
+dt_fn_research.bind("<FocusOut>", check_fn_functions)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(15),
           borderwidth=0).grid(row=15, column=2, stick='w', padx=5)
 
@@ -659,6 +682,7 @@ repeat_for_stp_value.set('No')
 tk.Label(win, text='Этапы пробоподготовки').grid(row=19, column=0, stick='e')
 steps_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 steps_sample.grid(row=19, column=1)
+steps_sample.bind("<FocusOut>", check_stp_function)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(19),
           borderwidth=0).grid(row=19, column=2, stick='w', padx=5)
 tk.Label(win, text='Этапы исследования').grid(row=20, column=0, stick='e')
@@ -668,7 +692,8 @@ stp_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 stp_research.grid(row=20, column=1)
 stp_check_button = tk.Checkbutton(win, text='заполнить этапы исследования', command=repeat_for_stp,
                                   variable=repeat_for_stp_value, offvalue='No', onvalue='Yes')
-stp_research_check_name = ''  # глобальная переменная для сверки и работы с галочкой
+glb_stp_research_check_name = '' # глобальная переменная для сверки и работы с галочкой
+glb_stp_number_of_research = ''
 stp_check_button.grid(row=20, column=3, stick='w')
 stp_research.bind("<FocusIn>", for_stp_check_off)
 stp_research.bind("<FocusOut>", for_stp_check_off)
