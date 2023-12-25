@@ -5,9 +5,22 @@ from tkinter import messagebox
 import os
 import openpyxl as op
 import csv
+import docx
+from docx.shared import Cm, Pt
+from docx.enum.table import WD_ROW_HEIGHT_RULE, WD_ALIGN_VERTICAL
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from python_docx_replace import docx_replace
+from collections import defaultdict
+import re
 
 path_1 = ''
 path_2 = ''
+
+refactor_nd_codes = {
+	'яйца гельминтов': 'МУК 4.2.2661-10 п.4.2',
+	'цисты кишечных патогенных простейших организмов': 'МУК 4.2.2661-10, п. 4.7',
+	'цисты лямблий': 'МУК 4.2.2314-08 п.5.1.3.1',
+}
 
 
 @staticmethod
@@ -25,6 +38,10 @@ def keypress(event):
 win = tk.Tk()
 win.geometry('900x700+50+50')
 win.title('Программа')
+win.event_delete('<<Paste>>', '<Control-v>')
+win.event_delete('<<Copy>>', '<Control-c>')
+win.event_delete('<<Cut>>', '<Control-x>')
+win.event_delete('<<SelectAll>>', '<Control-a>')
 win.bind("<Control-KeyPress>", keypress)
 
 
@@ -240,10 +257,12 @@ def dt_st_3_check_off(evt=None):
 	if dt_get_receipt.get() != dt_st_research.get():
 		dt_st_value_3.set('No')
 
+
 def check_st_functions(evt):
 	dt_st_1_check_off()
 	dt_st_2_check_off()
 	dt_st_3_check_off()
+
 
 def repeat_for_dt_fn_1():
 	dt_fn_sample_prep.delete(0, tk.END)
@@ -385,7 +404,7 @@ def start_window_0(variable, filename):
 	new_window_0 = tk.Toplevel(win)
 	new_window_0.grab_set()  # нельзя нажимать в других окнах
 	new_window_0.title('Окно 1')
-	new_window_0.geometry('400x300+1800+350')
+	new_window_0.geometry('400x300+1600+350')
 	new_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 	new_window_0.wm_attributes("-topmost", 1)  # чтобы повешать поверх все окон, но работает и без
 	# текстовое поле и кнопка для добавления в список
@@ -407,21 +426,22 @@ def on_closing_0(this_window):
 		this_window.destroy()
 
 
+def dict_from_csv():
+	csv_dict = {}
+	with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter='&')
+		for row in csv_reader:
+			dict_key = row[1]
+			dict_values = row
+			csv_dict[dict_key] = dict_values
+	return csv_dict
+
+
 def history_window():
 	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	history_window_0.title('Окно 1')
 	history_window_0.geometry('1000x500+1300+350')
 	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
-
-	def dict_from_csv():
-		csv_dict = {}
-		with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
-			csv_reader = csv.reader(f, delimiter='&')
-			for row in csv_reader:
-				dict_key = row[1]
-				dict_values = row
-				csv_dict[dict_key] = dict_values
-		return csv_dict
 
 	def choose_code(evt):
 		t0['state'] = tk.NORMAL
@@ -434,7 +454,6 @@ def history_window():
 		t0['state'] = tk.DISABLED
 
 	def confirm_to_main():
-
 		for i in range(len(variables_for_row)):
 			variables_for_row[i].delete(0, tk.END)
 
@@ -457,8 +476,7 @@ def history_window():
 	t0.grid(row=0, column=1, padx=5)
 
 	history_dict = dict_from_csv()
-
-	history_samples = sorted(dict_from_csv(), reverse=False)
+	history_samples = list(history_dict)[::-1]
 
 	list_var = tk.Variable(value=history_samples)
 	l0 = tk.Listbox(history_window_0, listvariable=list_var,
@@ -477,6 +495,199 @@ def clear_all_information():
 
 def clear_cell(index):
 	variables_for_row[index].delete(0, tk.END)
+
+
+def word_func(dict_for_word):
+	dict_first_item = next(iter(dict_for_word.values()))
+	executor = dict_first_item[9]
+	nd_names = dict_first_item[6]
+	sample_name = dict_first_item[1]
+	sample_name = sample_name.split('-')[:-1]
+	sample_name = ('-').join(sample_name)
+
+	if ' не обнаружены' in nd_names:
+		nd_names = nd_names.replace(' не обнаружены', '')
+		nd_result = 'Не обнаружено'
+	else:
+		nd_names = nd_names.replace(' обнаружены', '')
+		nd_result = 'Обнаружено'
+	nd_names = nd_names.split(', ')
+	nd_dict = {}
+	for name in nd_names:
+		nd_dict[name] = refactor_nd_codes[name]
+
+	indexes_nd_samples = len(dict_for_word)
+	list_samples = len(nd_names)
+
+	doc = docx.Document('docs/template.docx')
+
+	def add_block():
+		rows_for_table = indexes_nd_samples + (indexes_nd_samples * list_samples)
+		table = doc.add_table(rows=1 + rows_for_table, cols=3, style="Table Grid")
+		table.rows[0].height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+		table.rows[0].height = Cm(1.4)
+
+		for i, row in enumerate(table.rows):
+			table.allow_autofit = False
+			row.cells[0].width = Cm(5.19)
+			row.cells[1].width = Cm(4.75)
+			row.cells[2].width = Cm(6.5)
+
+		def format_for_cell(variable, bold=False, align_p=False, align_v=False, pt=11):
+			variable.paragraphs[0].runs[0].font.size = Pt(pt)
+			if align_p != False:
+				variable.paragraphs[0].alignment = align_v
+			if align_v != False:
+				variable.vertical_alignment = align_v
+			if bold != False:
+				variable.paragraphs[0].runs[0].font.bold = True
+
+		def make_head():
+			cell_0_0 = table.cell(0, 0)
+			cell_0_0.text = 'Определяемые показатели'
+			format_for_cell(cell_0_0, bold=True, align_p=WD_ALIGN_PARAGRAPH.CENTER, align_v=WD_ALIGN_VERTICAL.CENTER)
+
+			cell_0_1 = table.cell(0, 1)
+			cell_0_1.text = 'Результаты'
+			format_for_cell(cell_0_1, bold=True, align_p=WD_ALIGN_PARAGRAPH.CENTER, align_v=WD_ALIGN_VERTICAL.CENTER)
+
+			cell_0_2 = table.cell(0, 2)
+			cell_0_2.text = 'НД на метод исследования'
+			format_for_cell(cell_0_2, bold=True, align_p=WD_ALIGN_PARAGRAPH.CENTER, align_v=WD_ALIGN_VERTICAL.CENTER)
+
+		def nd_samples_frame(i, fullname):
+			row_1 = table.rows[i]
+			cell_1_0, cell_1_1, cell_1_2 = row_1.cells[:3]
+			cell_1_0.merge(cell_1_1)
+			cell_1_0.merge(cell_1_2)
+			cell_1_0 = table.cell(i, 0)
+			cell_1_0.text = fullname
+			format_for_cell(cell_1_0, bold=True)
+
+		def ls_indicators_frame(i, nd_cell_name, nd_cell_result, nd_cell_code):
+			table.rows[i].height = Cm(1.62)
+			cell_2_0 = table.cell(i, 0)
+			cell_2_0.text = nd_cell_name.capitalize()
+			format_for_cell(cell_2_0, align_p=WD_ALIGN_PARAGRAPH.LEFT, align_v=WD_ALIGN_VERTICAL.CENTER)
+
+			cell_2_1 = table.cell(i, 1)
+			cell_2_1.text = nd_cell_result.capitalize()
+			format_for_cell(cell_2_1, align_p=WD_ALIGN_PARAGRAPH.CENTER, align_v=WD_ALIGN_VERTICAL.CENTER)
+
+			cell_2_2 = table.cell(i, 2)
+			cell_2_2.text = nd_cell_code
+			format_for_cell(cell_2_2, align_p=WD_ALIGN_PARAGRAPH.CENTER, align_v=WD_ALIGN_VERTICAL.CENTER)
+
+		make_head()
+		i = 1
+		for key, value in dict_for_word.items():
+			sample_fullname = f'{value[1]} / {value[2]}'
+			nd_samples_frame(i, fullname=sample_fullname)
+			i += 1
+			for dict_name, code in nd_dict.items():
+				ls_indicators_frame(i, nd_cell_name=dict_name, nd_cell_code=code, nd_cell_result=nd_result)
+				i += 1
+
+		doc.add_paragraph('')
+		doc.add_paragraph('')
+
+	add_block()
+
+	# 2 таблица
+	table_2 = doc.add_table(rows=2, cols=3, style="style_for_final")
+	table_2.style.height_rule = WD_ROW_HEIGHT_RULE.EXACTLY
+
+	for i, row in enumerate(table_2.rows):
+		row.height = Cm(1.2)
+		table_2.allow_autofit = False
+		row.cells[0].width = Cm(7.5)
+		row.cells[1].width = Cm(4.51)
+		row.cells[2].width = Cm(4.49)
+
+	cell2_0_0 = table_2.cell(0, 0)
+	cell2_0_0.line_spacing = Pt(1.15)
+	cell2_0_0.text = 'Уполномоченный специалист:\n'
+	cell2_0_0.paragraphs[0].runs[0].font.size = Pt(12)
+	cell2_0_0.paragraphs[0].runs[0].font.bold = True
+	cell2_0_0.paragraphs[0].add_run('Врач-паразитолог')
+	cell2_0_0.paragraphs[0].runs[1].font.size = Pt(11)
+	cell2_0_0.paragraphs[0].runs[1].font.bold = False
+	cell2_0_0.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+	cell2_0_0.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
+
+	cell2_0_2 = table_2.cell(0, 2)
+	cell2_0_2.text = sp_did_research.get()
+	cell2_0_2.paragraphs[0].runs[0].font.size = Pt(11)
+	cell2_0_2.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+	cell2_0_2.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
+
+	cell2_1_0 = table_2.cell(1, 0)
+	cell2_1_0.text = 'Заведующий паразитологической лабораторией'
+	cell2_1_0.paragraphs[0].runs[0].font.size = Pt(11)
+	cell2_1_0.paragraphs[0].runs[0].font.bold = True
+	cell2_1_0.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+	cell2_1_0.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
+
+	cell2_1_2 = table_2.cell(1, 2)
+	cell2_1_2.text = 'Кулемин И.А.'
+	cell2_1_2.paragraphs[0].runs[0].font.size = Pt(11)
+	cell2_1_2.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+	cell2_1_2.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
+
+	protocol = doc.add_paragraph()
+	protocol.text = '------------------------------------------------------------------конец протокола------------------------------------------------------------------'
+	protocol.runs[0].font.size = Pt(9)
+
+	docx_replace(doc, dt_st_sampling=dict_first_item[13], dt_st_research=dict_first_item[11],
+	             dt_fn_research=dict_first_item[15])
+
+	print('Word файл сгенерирован')
+	doc.save(f'docs/{sample_name}.docx')
+
+
+def start_window_for_word():
+	def func_for_window():
+		selection = l0.curselection()
+		value = l0.get(int(l0.curselection()[0]))
+		dict_for_word = {k: v for k, v in data_set_dict.items() if re.fullmatch(f"{value}{r'-\d+'}", k)}
+		dict_for_word = dict(sorted(dict_for_word.items()))
+		word_func(dict_for_word)
+
+	def show_codes(evt):
+		t0['state'] = tk.NORMAL
+		t0.delete(0.0, tk.END)
+		w = evt.widget
+		value = w.get(int(w.curselection()[0]))
+		counter = 0
+		for i, row in enumerate(sorted(dict_for_data_set[value])):
+			t0.insert(tk.INSERT, row + '\n')
+		t0['state'] = tk.DISABLED
+
+	window_for_word = tk.Toplevel(win)  # нельзя нажимать в других окнах
+	window_for_word.title('Окно 1')
+	window_for_word.geometry('400x500+1000+350')
+	window_for_word.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
+	data_set_dict = dict_from_csv()
+	data_set_list = list(data_set_dict)[::-1]
+
+	dict_for_data_set = defaultdict(list)
+	for i in data_set_list:
+		code = i.split('-')[:-1]
+		code = ('-').join(code)
+		dict_for_data_set[code].append(i)
+
+	sample_codes = [key for key in dict_for_data_set]
+
+	t0 = tk.Text(window_for_word, width=30, state=tk.DISABLED)
+	t0.grid(row=0, column=1, padx=5)
+	list_var = tk.Variable(value=sample_codes)
+	l0 = tk.Listbox(window_for_word, listvariable=list_var,
+	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+	l0.grid(row=0, column=0, stick='e')
+	l0.bind('<<ListboxSelect>>', show_codes)
+	b1 = tk.Button(window_for_word, text='Применить', font=('Arial', '14'), command=func_for_window)
+	b1.grid(row=1, column=1, pady=20)
 
 
 # двойное
@@ -692,7 +903,7 @@ stp_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 stp_research.grid(row=20, column=1)
 stp_check_button = tk.Checkbutton(win, text='заполнить этапы исследования', command=repeat_for_stp,
                                   variable=repeat_for_stp_value, offvalue='No', onvalue='Yes')
-glb_stp_research_check_name = '' # глобальная переменная для сверки и работы с галочкой
+glb_stp_research_check_name = ''  # глобальная переменная для сверки и работы с галочкой
 glb_stp_number_of_research = ''
 stp_check_button.grid(row=20, column=3, stick='w')
 stp_research.bind("<FocusIn>", for_stp_check_off)
@@ -717,6 +928,10 @@ op_xl_button.grid(row=22, column=4, stick='w')
 # Кнопка на сервер
 tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, stick='e',
                                                                                       pady=10)
+
+tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=lambda: start_window_for_word()).grid(
+	row=100, column=1, stick='e',
+	pady=10)
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
                      ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
