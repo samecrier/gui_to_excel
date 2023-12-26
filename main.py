@@ -2,17 +2,16 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-import os
-import openpyxl as op
-import csv
-import docx
 from docx.shared import Cm, Pt
 from docx.enum.table import WD_ROW_HEIGHT_RULE, WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from python_docx_replace import docx_replace
 from collections import defaultdict
+
+import openpyxl as op
+import csv
+import docx
 import re
-import sv_ttk
 from ctypes import windll
 import sys
 import os
@@ -68,21 +67,25 @@ def write_empty_csv(filename):
 
 
 def settings_window():
+	def scaling_option(scaling_number):
+		win.tk.call('tk', 'scaling', scaling_number)
+		write_csv([scaling_number], 'datas/setting.csv')
+		check_scaling_messagebox = messagebox.askokcancel('Предупреждение',
+		                                                  'Чтобы применение вступило в силу необходимо перезагрузить приложение. Нажмите ОК если хотите перезагрузить приложение сейчас (введенные данные будут утеряны). Нажмите Отмена, если хотите самостоятельно перезагрузить приложение.',
+		                                                  parent=window_for_settings)
+		if check_scaling_messagebox:
+			python = sys.executable
+			os.execl(python, python, *sys.argv)
+
 	window_for_settings = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	window_for_settings.title('Настройки')
-	window_for_settings.geometry('500x300+1000+350')
+	window_for_settings.geometry(f'{int(500.0 * scaling)}x{int(300.0 * scaling)}+1000+350')
 	window_for_settings.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 	tk.Label(window_for_settings, text='Введите коэффициент масштабирования').pack()
+	tk.Label(window_for_settings, text=f'Текущий значение - {scaling}').pack()
 	scaling_entry = tk.Entry(window_for_settings)
 	scaling_entry.pack()
 	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).pack()
-
-
-def scaling_option(scaling_number):
-	win.tk.call('tk', 'scaling', scaling_number)
-	write_csv([scaling_number], 'datas/setting.csv')
-	python = sys.executable
-	os.execl(python, python, *sys.argv)
 
 
 scaling = ('').join(read_csv_one_string('datas/setting.csv'))
@@ -149,11 +152,11 @@ def excel_func():
 		                     'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
 		return
 	if path_1 == '':
-		path_sample_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_sample.xlsx'
+		path_sample_file = 'docs/test_file_sample.xlsx'
 	else:
 		path_sample_file = path_1
 	if path_2 == '':
-		path_register_file = 'C:/Users/saycry/PycharmProjects/gui_to_excel/docs/test_file_register.xlsx'
+		path_register_file = 'docs/test_file_register.xlsx'
 	else:
 		path_register_file = path_2
 
@@ -429,7 +432,7 @@ def start_window_0(variable, filename):
 			if new_employee not in list_employees:
 				write_csv(list_employees + [new_employee], filename)
 			else:
-				messagebox.showerror('Ошибка', 'Такой сотрудник уже в списке!')
+				messagebox.showerror('Ошибка', 'Такой сотрудник уже в списке!', parent=new_window_0)
 				return
 		else:
 			write_csv([new_employee], filename)
@@ -449,7 +452,7 @@ def start_window_0(variable, filename):
 	new_window_0 = tk.Toplevel(win)
 	new_window_0.grab_set()  # нельзя нажимать в других окнах
 	new_window_0.title('Окно 1')
-	new_window_0.geometry('400x300+1600+350')
+	new_window_0.geometry(f'{int(400.0 * scaling)}x{int(300.0 * scaling)}+1600+350')
 	new_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 	new_window_0.wm_attributes("-topmost", 1)  # чтобы повешать поверх все окон, но работает и без
 	# текстовое поле и кнопка для добавления в список
@@ -486,6 +489,7 @@ def history_window():
 	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	history_window_0.title('Окно 1')
 	history_window_0.geometry(f'{int(750.0 * scaling)}x{int(400.0 * scaling)}+1300+350')
+	history_window_0.wm_attributes("-topmost", 0)  # чтобы повешать поверх все окон, но работает и без
 	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
 	def choose_code(evt):
@@ -522,7 +526,7 @@ def history_window():
 			if value not in row:
 				write_history(row, type_record='a')
 			else:
-				answer = messagebox.askokcancel('Предупреждение', 'Вы точно хотите удалить?')
+				answer = messagebox.askokcancel('Предупреждение', 'Вы точно хотите удалить?', parent=history_window_0)
 				if answer == False:
 					print('Отмена!')
 					write_history(row, type_record='a')
@@ -740,7 +744,7 @@ def start_window_for_word():
 
 	window_for_word = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	window_for_word.title('Окно 1')
-	window_for_word.geometry('400x500+1000+350')
+	window_for_word.geometry(f'{int(400.0 * scaling)}x{int(500.0 * scaling)}+1000+350')
 	window_for_word.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
 	data_set_dict = dict_from_csv()
