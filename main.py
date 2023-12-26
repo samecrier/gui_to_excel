@@ -12,6 +12,10 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from python_docx_replace import docx_replace
 from collections import defaultdict
 import re
+import sv_ttk
+from ctypes import windll
+import sys
+import os
 
 path_1 = ''
 path_2 = ''
@@ -21,6 +25,13 @@ refactor_nd_codes = {
 	'цисты кишечных патогенных простейших организмов': 'МУК 4.2.2661-10, п. 4.7',
 	'цисты лямблий': 'МУК 4.2.2314-08 п.5.1.3.1',
 }
+
+
+def read_csv(filename):
+	with open(filename, 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter=';')
+		for row in csv_reader:
+			return row
 
 
 @staticmethod
@@ -35,8 +46,35 @@ def keypress(event):
 		event.widget.event_generate('<<SelectAll>>')
 
 
+def settings_window():
+	window_for_settings = tk.Toplevel(win)  # нельзя нажимать в других окнах
+	window_for_settings.title('Настройки')
+	window_for_settings.geometry('500x300+1000+350')
+	window_for_settings.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+	tk.Label(window_for_settings, text='Введите коэффициент масштабирования').pack()
+	scaling_entry = tk.Entry(window_for_settings)
+	scaling_entry.pack()
+	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).pack()
+
+def write_csv(row, filename):
+	row = sorted(row)
+	with open(filename, 'w', newline='', encoding='utf-8') as f:
+		writer = csv.writer(f, delimiter=';')
+		writer.writerow(row)
+
+def scaling_option(scaling_number):
+	win.tk.call('tk', 'scaling', scaling_number)
+	write_csv([scaling_number], 'datas/setting.csv')
+	python = sys.executable
+	os.execl(python, python, *sys.argv)
+
+scaling = ('').join(read_csv('datas/setting.csv'))
+scaling = float(scaling)
 win = tk.Tk()
-win.geometry('900x700+50+50')
+windll.shcore.SetProcessDpiAwareness(1)
+win.tk.call('tk', 'scaling', scaling)
+# отменить скейлинг
+win.geometry(f'{int(775.0*scaling)}x{int(550.0*scaling)}+50+50')
 win.title('Программа')
 win.event_delete('<<Paste>>', '<Control-V>')
 win.event_delete('<<Copy>>', '<Control-C>')
@@ -184,21 +222,6 @@ def excel_func():
 	os.startfile(path_sample_file)
 	os.startfile(path_register_file)
 	print('Сохранение в эксель с открытием ')
-
-
-def read_csv(filename):
-	with open(filename, 'r', encoding='utf-8', newline='') as f:
-		csv_reader = csv.reader(f, delimiter=';')
-		for row in csv_reader:
-			return row
-
-
-def write_csv(row, filename):
-	row = sorted(row)
-	with open(filename, 'w', newline='', encoding='utf-8') as f:
-		writer = csv.writer(f, delimiter=';')
-		writer.writerow(row)
-
 
 def get_file_1():
 	global path_1
@@ -702,6 +725,7 @@ tk.Button(win, text='x', activeforeground='red', foreground='black', command=lam
 	row=0, column=2, stick='w', padx=5)
 tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=3, stick='w')
 tk.Button(win, text='История', command=history_window).grid(row=0, column=4, stick='w')
+tk.Button(win, text='Настройки', command=settings_window).grid(row=0, column=5, stick='w')
 
 # двойное
 tk.Label(win, text='Регистрационный номер пробы').grid(row=1, column=0, stick='e')
