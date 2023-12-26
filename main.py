@@ -27,13 +27,6 @@ refactor_nd_codes = {
 }
 
 
-def read_csv(filename):
-	with open(filename, 'r', encoding='utf-8', newline='') as f:
-		csv_reader = csv.reader(f, delimiter=';')
-		for row in csv_reader:
-			return row
-
-
 @staticmethod
 def keypress(event):
 	if event.keycode == 86:
@@ -46,6 +39,34 @@ def keypress(event):
 		event.widget.event_generate('<<SelectAll>>')
 
 
+def read_csv_one_string(filename, delimiter=';'):
+	with open(filename, 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter=delimiter)
+		for row in csv_reader:
+			return row
+
+
+def read_csv_full(filename, delimiter=';'):
+	with open(filename, 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter=delimiter)
+		csv_list = []
+		for row in csv_reader:
+			csv_list.append(row)
+		return csv_list
+
+
+def write_csv(row, filename, delimiter=';'):
+	row = sorted(row)
+	with open(filename, 'w', newline='', encoding='utf-8') as f:
+		writer = csv.writer(f, delimiter=delimiter)
+		writer.writerow(row)
+
+
+def write_empty_csv(filename):
+	with open(filename, 'w', newline='', encoding='utf-8') as f:
+		pass
+
+
 def settings_window():
 	window_for_settings = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	window_for_settings.title('Настройки')
@@ -56,11 +77,6 @@ def settings_window():
 	scaling_entry.pack()
 	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).pack()
 
-def write_csv(row, filename):
-	row = sorted(row)
-	with open(filename, 'w', newline='', encoding='utf-8') as f:
-		writer = csv.writer(f, delimiter=';')
-		writer.writerow(row)
 
 def scaling_option(scaling_number):
 	win.tk.call('tk', 'scaling', scaling_number)
@@ -68,13 +84,14 @@ def scaling_option(scaling_number):
 	python = sys.executable
 	os.execl(python, python, *sys.argv)
 
-scaling = ('').join(read_csv('datas/setting.csv'))
+
+scaling = ('').join(read_csv_one_string('datas/setting.csv'))
 scaling = float(scaling)
 win = tk.Tk()
 windll.shcore.SetProcessDpiAwareness(1)
 win.tk.call('tk', 'scaling', scaling)
 # отменить скейлинг
-win.geometry(f'{int(775.0*scaling)}x{int(550.0*scaling)}+50+50')
+win.geometry(f'{int(775.0 * scaling)}x{int(550.0 * scaling)}+50+50')
 win.title('Программа')
 win.event_delete('<<Paste>>', '<Control-V>')
 win.event_delete('<<Copy>>', '<Control-C>')
@@ -112,8 +129,8 @@ def get_info():
 	print('_________________________________________________')
 
 
-def write_history(row):
-	with open('datas/query_history.csv', 'a', newline='', encoding='utf-8') as f:
+def write_history(row, type_record='a'):
+	with open('datas/query_history.csv', type_record, newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter='&')
 		writer.writerow(row)
 
@@ -222,6 +239,7 @@ def excel_func():
 	os.startfile(path_sample_file)
 	os.startfile(path_register_file)
 	print('Сохранение в эксель с открытием ')
+
 
 def get_file_1():
 	global path_1
@@ -406,7 +424,7 @@ def start_window_0(variable, filename):
 	# добавление нового элемента
 	def add():
 		new_employee = employee_entry.get()
-		list_employees = read_csv(filename)
+		list_employees = read_csv_one_string(filename)
 		if list_employees:
 			if new_employee not in list_employees:
 				write_csv(list_employees + [new_employee], filename)
@@ -438,7 +456,7 @@ def start_window_0(variable, filename):
 	employee_entry = ttk.Entry(new_window_0)
 	employee_entry.grid(column=0, stick='e', row=0, padx=6, pady=6, sticky='ew')
 	ttk.Button(new_window_0, text="Добавить специалиста", command=add).grid(column=1, row=0, padx=6, pady=6)
-	employees = read_csv(filename)
+	employees = read_csv_one_string(filename)
 	employees_var = tk.Variable(new_window_0, value=employees)
 	employee_listbox = tk.Listbox(new_window_0, listvariable=employees_var)
 	employee_listbox.grid(row=1, column=0, stick='e', columnspan=2, sticky='ew', padx=5, pady=5)
@@ -467,7 +485,7 @@ def dict_from_csv():
 def history_window():
 	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	history_window_0.title('Окно 1')
-	history_window_0.geometry('1000x500+1300+350')
+	history_window_0.geometry(f'{int(750.0 * scaling)}x{int(400.0 * scaling)}+1300+350')
 	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
 	def choose_code(evt):
@@ -481,13 +499,39 @@ def history_window():
 		t0['state'] = tk.DISABLED
 
 	def confirm_to_main():
-		for i in range(len(variables_for_row)):
-			variables_for_row[i].delete(0, tk.END)
-
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
 		for i in range(len(variables_for_row)):
+			variables_for_row[i].delete(0, tk.END)
 			variables_for_row[i].insert(0, history_dict[value][i])
+
+	def confirm_empty_to_main():
+		selection = l0.curselection()
+		value = l0.get(int(l0.curselection()[0]))
+		for i in range(len(variables_for_row)):
+			if variables_for_row[i].get() == '':
+				variables_for_row[i].insert(0, history_dict[value][i])
+
+	def delete_from_csv():
+		selection = l0.curselection()
+		value = l0.get(int(l0.curselection()[0]))
+		old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
+		write_empty_csv('datas/query_history.csv')
+		new_csv = []
+		for row in old_csv:
+			if value not in row:
+				write_history(row, type_record='a')
+			else:
+				answer = messagebox.askokcancel('Предупреждение', 'Вы точно хотите удалить?')
+				if answer == False:
+					print('Отмена!')
+					write_history(row, type_record='a')
+				else:
+					t0['state'] = tk.NORMAL
+					t0.delete(0.0, tk.END)
+					l0.delete(selection[0])
+					t0['state'] = tk.DISABLED
+
 
 	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
 	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
@@ -499,9 +543,6 @@ def history_window():
 	                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
 	                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
 
-	t0 = tk.Text(history_window_0, width=100, state=tk.DISABLED)
-	t0.grid(row=0, column=1, padx=5)
-
 	history_dict = dict_from_csv()
 	history_samples = list(history_dict)[::-1]
 
@@ -511,8 +552,16 @@ def history_window():
 	l0.grid(row=0, column=0, stick='e')
 	l0.bind('<<ListboxSelect>>', choose_code)
 
-	b1 = tk.Button(history_window_0, text='Применить', font=('Arial', '14'), command=confirm_to_main)
-	b1.grid(row=1, column=1, pady=20)
+	t0 = tk.Text(history_window_0, width=100, state=tk.DISABLED)
+	t0.grid(row=0, column=1, columnspan=2, padx=5)
+
+	b0 = tk.Button(history_window_0, text='Удалить запись', font=('Arial', '14'), command=delete_from_csv)
+	b0.grid(row=1, column=0, pady=5)
+	b1 = tk.Button(history_window_0, text='Заполнить только пустые', font=('Arial', '14'),
+	               command=confirm_empty_to_main)
+	b1.grid(row=1, column=1, pady=5)
+	b2 = tk.Button(history_window_0, text='Применить', font=('Arial', '14'), command=confirm_to_main)
+	b2.grid(row=1, column=2, pady=5)
 
 
 def clear_all_information():
