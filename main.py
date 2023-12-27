@@ -152,11 +152,11 @@ def excel_func():
 		                     'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
 		return
 	if path_1 == '':
-		path_sample_file = 'docs/test_file_sample.xlsx'
+		path_sample_file = 'docs\\test_file_sample.xlsx'
 	else:
 		path_sample_file = path_1
 	if path_2 == '':
-		path_register_file = 'docs/test_file_register.xlsx'
+		path_register_file = 'docs\\test_file_register.xlsx'
 	else:
 		path_register_file = path_2
 
