@@ -138,6 +138,8 @@ def write_history(row, type_record='a'):
 	with open('datas/query_history.csv', type_record, newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter='&')
 		writer.writerow(row)
+		writer.writerow(row)
+		writer.writerow(row)
 
 
 def excel_func():
@@ -173,6 +175,7 @@ def excel_func():
 					styled_cell.number_format = 'dd/mm/yyyy;@'
 					styled_cell.alignment = Alignment(horizontal='right')
 				yield styled_cell
+
 	if rg_nb_sample.get() == '':
 		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
 		return
@@ -556,7 +559,6 @@ def history_window():
 			else:
 				variables_for_row[i].insert(0, history_dict[value][i])
 
-
 	def confirm_empty_to_main():
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
@@ -638,17 +640,15 @@ def clear_cell(index):
 def word_func(dict_for_word):
 	dict_first_item = next(iter(dict_for_word.values()))
 	executor = dict_first_item[9]
-	indicator_names = dict_first_item[6]
 	sample_name = dict_first_item[1]
 	sample_name = sample_name.split('-')[:-1]
 	sample_name = ('-').join(sample_name)
 
+	indicator_names = dict_first_item[6]
 	if ' не обнаружены' in indicator_names:
 		indicator_names = indicator_names.replace(' не обнаружены', '')
-		indicator_result = 'Не обнаружено'
 	else:
 		indicator_names = indicator_names.replace(' обнаружены', '')
-		indicator_result = 'Обнаружено'
 	indicator_names = indicator_names.split(', ')
 	nd_dict = {}
 	for name in indicator_names:
@@ -720,6 +720,11 @@ def word_func(dict_for_word):
 		i = 1
 		for key, value in dict_for_word.items():
 			sample_fullname = f'{value[1]} / {value[2]}'
+			indicator_name = value[6]
+			if ' не обнаружены' in indicator_name:
+				indicator_result = 'Не обнаружено'
+			else:
+				indicator_result = 'Обнаружено'
 			nd_samples_frame(i, fullname=sample_fullname)
 			i += 1
 			for dict_name, code in nd_dict.items():
