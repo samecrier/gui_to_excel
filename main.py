@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.scrolledtext
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -9,6 +10,7 @@ from python_docx_replace import docx_replace
 from collections import defaultdict
 
 import openpyxl as op
+import pyperclip as clip
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font, GradientFill
 import csv
@@ -32,8 +34,6 @@ refactor_nd_codes = {
 def keypress(event):
 	if event.keycode == 86:
 		event.widget.event_generate('<<Paste>>')
-	elif event.keycode == 67:
-		event.widget.event_generate('<<Copy>>')
 	elif event.keycode == 88:
 		event.widget.event_generate('<<Cut>>')
 	elif event.keycode == 65:
@@ -44,6 +44,7 @@ def read_csv_one_string(filename, delimiter=';'):
 	with open(filename, 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter=delimiter)
 		for row in csv_reader:
+			f.close()
 			return row
 
 
@@ -53,6 +54,7 @@ def read_csv_full(filename, delimiter=';'):
 		csv_list = []
 		for row in csv_reader:
 			csv_list.append(row)
+		f.close()
 		return csv_list
 
 
@@ -61,10 +63,12 @@ def write_csv(row, filename, delimiter=';'):
 	with open(filename, 'w', newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter=delimiter)
 		writer.writerow(row)
+		f.close()
 
 
 def write_empty_csv(filename):
 	with open(filename, 'w', newline='', encoding='utf-8') as f:
+		f.close()
 		pass
 
 
@@ -92,7 +96,20 @@ def settings_window():
 
 scaling = ('').join(read_csv_one_string('datas/setting.csv'))
 scaling = float(scaling)
+
 win = tk.Tk()
+text_copy = tkinter.scrolledtext.ScrolledText(master=win, wrap='none')
+
+
+def _copy(event):
+	if event.keycode == 67:
+		try:
+			string = text_copy.selection_get()
+			clip.copy(string)
+		except:
+			pass
+
+
 windll.shcore.SetProcessDpiAwareness(1)
 win.tk.call('tk', 'scaling', scaling)
 # отменить скейлинг
@@ -107,6 +124,7 @@ win.event_delete('<<Copy>>', '<Control-c>')
 win.event_delete('<<Cut>>', '<Control-x>')
 win.event_delete('<<SelectAll>>', '<Control-a>')
 win.bind("<Control-KeyPress>", keypress)
+win.bind_all("<Control-KeyPress>", _copy)
 
 
 def get_info():
@@ -134,149 +152,166 @@ def get_info():
 	print('_________________________________________________')
 
 
-def write_history(row, type_record='a'):
+def write_history(new_csv, type_record='a'):
 	with open('datas/query_history.csv', type_record, newline='', encoding='utf-8') as f:
-		writer = csv.writer(f, delimiter='&')
-		writer.writerow(row)
+		for row in new_csv:
+			writer = csv.writer(f, delimiter='&')
+			writer.writerow(row)
+		f.close()
 
 
 def excel_func():
-	def styled_cells(data, sheet):
-		if len(data) == 15:
-			for i, styled_cell in enumerate(data):
-				if i == 0:
-					styled_cell = int(styled_cell)
-				styled_cell = Cell(sheet, column="A", value=styled_cell)
-				styled_cell.font = Font(name='Calibri', size=11)
-				styled_cell.border = Border(left=Side(style='thin'),
-				                            right=Side(style='thin'),
-				                            top=Side(style='thin'),
-				                            bottom=Side(style='thin'))
-				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
-				if i in (5, 6, 10, 11):
+	try:
+		def styled_cells(data, sheet):
+			if len(data) == 15:
+				for i, styled_cell in enumerate(data):
+					if i == 0:
+						styled_cell = int(styled_cell)
+					styled_cell = Cell(sheet, column="A", value=styled_cell)
+					styled_cell.font = Font(name='Calibri', size=11)
+					styled_cell.border = Border(left=Side(style='thin'),
+					                            right=Side(style='thin'),
+					                            top=Side(style='thin'),
+					                            bottom=Side(style='thin'))
+					styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
+					if i in (5, 6, 10, 11):
+						if i in (3, 4, 5, 7, 8, 9):
+							styled_cell.number_format = 'dd/mm/yyyy;@'
+							styled_cell.alignment = Alignment(horizontal='right')
+					yield styled_cell
+			else:
+				for i, styled_cell in enumerate(data):
+					if i == 0:
+						styled_cell = int(styled_cell)
+					styled_cell = Cell(sheet, column="A", value=styled_cell)
+					styled_cell.font = Font(name='Calibri', size=11)
+					styled_cell.border = Border(left=Side(style='thin'),
+					                            right=Side(style='thin'),
+					                            top=Side(style='thin'),
+					                            bottom=Side(style='thin'))
+					styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
 					if i in (3, 4, 5, 7, 8, 9):
 						styled_cell.number_format = 'dd/mm/yyyy;@'
 						styled_cell.alignment = Alignment(horizontal='right')
-				yield styled_cell
+					yield styled_cell
+
+		if rg_nb_sample.get() == '':
+			messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
+			return
+		dict_keys = []
+		with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
+			csv_reader = csv.reader(f, delimiter='&')
+			for row in csv_reader:
+				dict_keys.append(row[1])
+			f.close()
+		if rg_nb_sample.get() in dict_keys:
+			answer = messagebox.askokcancel('Предупреждение',
+			                                'Данный регистрационный номер уже находится в базе. Если вы хотите заменить запись нажмите ок, если вы не хотите заменять запись нажмите отмена',
+			                                parent=win)
+			if answer == True:
+				old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
+				write_empty_csv('datas/query_history.csv')
+				for row in old_csv:
+					if rg_nb_sample.get() not in row:
+						write_history(row, type_record='a')
+			if answer == False:
+				messagebox.showinfo('Информация', 'Изменение не будут применены к записи.')
+				return
+
+		if path_1 == '':
+			path_sample_file = 'docs\\test_file_sample.xlsx'
 		else:
-			for i, styled_cell in enumerate(data):
-				if i == 0:
-					styled_cell = int(styled_cell)
-				styled_cell = Cell(sheet, column="A", value=styled_cell)
-				styled_cell.font = Font(name='Calibri', size=11)
-				styled_cell.border = Border(left=Side(style='thin'),
-				                            right=Side(style='thin'),
-				                            top=Side(style='thin'),
-				                            bottom=Side(style='thin'))
-				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
-				if i in (3, 4, 5, 7, 8, 9):
-					styled_cell.number_format = 'dd/mm/yyyy;@'
-					styled_cell.alignment = Alignment(horizontal='right')
-				yield styled_cell
+			path_sample_file = path_1
+		if path_2 == '':
+			path_register_file = 'docs\\test_file_register.xlsx'
+		else:
+			path_register_file = path_2
 
-	if rg_nb_sample.get() == '':
-		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
-		return
-	dict_keys = []
-	with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
-		csv_reader = csv.reader(f, delimiter='&')
-		for row in csv_reader:
-			dict_keys.append(row[1])
-	if rg_nb_sample.get() in dict_keys:
-		messagebox.showerror('Ошибка',
-		                     'Данный регистрационный номер уже находится в базе. Удалите запись из базы или попробуйте ввести другой номер.')
-		return
-	if path_1 == '':
-		path_sample_file = 'docs\\test_file_sample.xlsx'
-	else:
-		path_sample_file = path_1
-	if path_2 == '':
-		path_register_file = 'docs\\test_file_register.xlsx'
-	else:
-		path_register_file = path_2
+		book_1 = op.load_workbook(filename=path_sample_file)
+		sheet_1 = book_1.active
+		book_2 = op.load_workbook(filename=path_register_file)
+		sheet_2 = book_2.active
 
-	book_1 = op.load_workbook(filename=path_sample_file)
-	sheet_1 = book_1.active
-	book_2 = op.load_workbook(filename=path_register_file)
-	sheet_2 = book_2.active
+		if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
+			ls_indicators_research = ls_indicators.get()
+		else:
+			ls_indicators_research = ls_indicators.get() + ' ' + default_indicator
 
-	if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
-		ls_indicators_research = ls_indicators.get()
-	else:
-		ls_indicators_research = ls_indicators.get() + ' ' + default_indicator
-
-	sample_file = [
-		nb_lab_journal.get(),
-		rg_nb_sample.get(),
-		name_sample.get(),
-		det_nd_prep_sample.get(),
-		steps_sample.get(),
-		dt_st_sample_prep.get(),
-		dt_fn_sample_prep.get(),
-		nm_sample_executor.get(),
-		det_nd_research.get(),
-		stp_research.get(),
-		dt_st_research.get(),
-		dt_fn_research.get(),
-		ls_indicators_research,
-		sp_did_research.get(),
-		nt_sample.get()
-	]
-	register_file = [
-		nb_lab_journal.get(),
-		rg_nb_sample.get(),
-		name_sample.get(),
-		dt_st_sampling.get(),
-		dt_get_receipt.get(),
-		dt_st_research.get(),
-		ls_indicators.get(),
-		dt_fn_research.get(),
-		dt_disposal.get(),
-		dt_issue_protocol.get(),
-		rsp_executor.get(),
-		nt_register.get()
-	]
-
-	sheet_1.append(styled_cells(sample_file, sheet_1))
-	book_1.save(filename=path_sample_file)
-	path = os.path.realpath(path_sample_file)
-
-	sheet_2.append(styled_cells(register_file, sheet_2))
-	book_2.save(filename=path_register_file)
-	path = os.path.realpath(path_register_file)
-
-	write_history(
-		[
+		sample_file = [
 			nb_lab_journal.get(),
 			rg_nb_sample.get(),
 			name_sample.get(),
-			nm_sample_executor.get(),
-			nt_sample.get(),
-			nt_register.get(),
-			ls_indicators_research,
 			det_nd_prep_sample.get(),
-			det_nd_research.get(),
-			sp_did_research.get(),
-			rsp_executor.get(),
-			dt_st_research.get(),
+			steps_sample.get(),
 			dt_st_sample_prep.get(),
+			dt_fn_sample_prep.get(),
+			nm_sample_executor.get(),
+			det_nd_research.get(),
+			stp_research.get(),
+			dt_st_research.get(),
+			dt_fn_research.get(),
+			ls_indicators_research,
+			sp_did_research.get(),
+			nt_sample.get()
+		]
+		register_file = [
+			nb_lab_journal.get(),
+			rg_nb_sample.get(),
+			name_sample.get(),
 			dt_st_sampling.get(),
 			dt_get_receipt.get(),
+			dt_st_research.get(),
+			ls_indicators.get(),
 			dt_fn_research.get(),
-			dt_fn_sample_prep.get(),
 			dt_disposal.get(),
 			dt_issue_protocol.get(),
-			steps_sample.get(),
-			stp_research.get(),
+			rsp_executor.get(),
+			nt_register.get()
 		]
-	)
 
-	if op_xl_button_value.get() == 'No':
-		print('Сохранение в эксель без открытия')
-		return
-	os.startfile(path_sample_file)
-	os.startfile(path_register_file)
-	print('Сохранение в эксель с открытием ')
+		sheet_1.append(styled_cells(sample_file, sheet_1))
+		book_1.save(filename=path_sample_file)
+		path = os.path.realpath(path_sample_file)
+
+		sheet_2.append(styled_cells(register_file, sheet_2))
+		book_2.save(filename=path_register_file)
+		path = os.path.realpath(path_register_file)
+
+		write_history(
+			[
+				nb_lab_journal.get(),
+				rg_nb_sample.get(),
+				name_sample.get(),
+				nm_sample_executor.get(),
+				nt_sample.get(),
+				nt_register.get(),
+				ls_indicators_research,
+				det_nd_prep_sample.get(),
+				det_nd_research.get(),
+				sp_did_research.get(),
+				rsp_executor.get(),
+				dt_st_research.get(),
+				dt_st_sample_prep.get(),
+				dt_st_sampling.get(),
+				dt_get_receipt.get(),
+				dt_fn_research.get(),
+				dt_fn_sample_prep.get(),
+				dt_disposal.get(),
+				dt_issue_protocol.get(),
+				steps_sample.get(),
+				stp_research.get(),
+			]
+		)
+
+		if op_xl_button_value.get() == 'No':
+			print('Сохранение в эксель без открытия')
+			return
+		os.startfile(path_sample_file)
+		os.startfile(path_register_file)
+		print('Сохранение в эксель с открытием ')
+
+	except:
+		messagebox.showerror('Ошибка', 'Введен неправильный формат данных', parent=win)
 
 
 def get_file_1():
@@ -421,7 +456,6 @@ def repeat_for_stp():
 			stp_research.insert(0, stp_research_name)
 			glb_stp_research_check_name = stp_research_name
 			glb_stp_number_of_research = stp_research_result_check_digit
-			print('glb stp number-', glb_stp_number_of_research)
 
 		else:
 			messagebox.showerror('Ошибка',
@@ -517,6 +551,7 @@ def dict_from_csv():
 			dict_key = row[1]
 			dict_values = row
 			csv_dict[dict_key] = dict_values
+		f.close()
 	return csv_dict
 
 
@@ -541,7 +576,6 @@ def history_window():
 		global default_indicator
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
-		print(value)
 		for i in range(len(variables_for_row)):
 			variables_for_row[i].delete(0, tk.END)
 			if i == 6:
@@ -576,6 +610,7 @@ def history_window():
 					variables_for_row[i].insert(0, history_dict[value][i])
 
 	def delete_from_csv():
+		global bug_catcher
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
 		old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
@@ -583,17 +618,17 @@ def history_window():
 		new_csv = []
 		for row in old_csv:
 			if value not in row:
-				write_history(row, type_record='a')
+				new_csv.append(row)
 			else:
 				answer = messagebox.askokcancel('Предупреждение', 'Вы точно хотите удалить?', parent=history_window_0)
 				if answer == False:
-					print('Отмена!')
-					write_history(row, type_record='a')
+					new_csv.append(row)
 				else:
 					t0['state'] = tk.NORMAL
 					t0.delete(0.0, tk.END)
 					l0.delete(selection[0])
 					t0['state'] = tk.DISABLED
+		write_history(new_csv)
 
 	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
 	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
@@ -819,7 +854,6 @@ def start_window_for_word():
 	data_set_dict = dict_from_csv()
 	data_set_list = list(data_set_dict)[::-1]
 	data_set_list = list(sorted(data_set_list, key=lambda x: int(x.split('-')[-1])))
-	print(data_set_list)
 	dict_for_data_set = defaultdict(list)
 	for i in data_set_list:
 		code = i.split('-')[:-1]
