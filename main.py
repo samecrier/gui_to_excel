@@ -9,6 +9,8 @@ from python_docx_replace import docx_replace
 from collections import defaultdict
 
 import openpyxl as op
+from openpyxl.cell.cell import Cell
+from openpyxl.styles import PatternFill, Border, Side, Alignment, Font, GradientFill
 import csv
 import docx
 import re
@@ -139,6 +141,38 @@ def write_history(row, type_record='a'):
 
 
 def excel_func():
+	def styled_cells(data, sheet):
+		if len(data) == 15:
+			for i, styled_cell in enumerate(data):
+				if i == 0:
+					styled_cell = int(styled_cell)
+				styled_cell = Cell(sheet, column="A", value=styled_cell)
+				styled_cell.font = Font(name='Calibri', size=11)
+				styled_cell.border = Border(left=Side(style='thin'),
+				                            right=Side(style='thin'),
+				                            top=Side(style='thin'),
+				                            bottom=Side(style='thin'))
+				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
+				if i in (5, 6, 10, 11):
+					if i in (3, 4, 5, 7, 8, 9):
+						styled_cell.number_format = 'dd/mm/yyyy;@'
+						styled_cell.alignment = Alignment(horizontal='right')
+				yield styled_cell
+		else:
+			for i, styled_cell in enumerate(data):
+				if i == 0:
+					styled_cell = int(styled_cell)
+				styled_cell = Cell(sheet, column="A", value=styled_cell)
+				styled_cell.font = Font(name='Calibri', size=11)
+				styled_cell.border = Border(left=Side(style='thin'),
+				                            right=Side(style='thin'),
+				                            top=Side(style='thin'),
+				                            bottom=Side(style='thin'))
+				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
+				if i in (3, 4, 5, 7, 8, 9):
+					styled_cell.number_format = 'dd/mm/yyyy;@'
+					styled_cell.alignment = Alignment(horizontal='right')
+				yield styled_cell
 	if rg_nb_sample.get() == '':
 		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
 		return
@@ -166,9 +200,9 @@ def excel_func():
 	sheet_2 = book_2.active
 
 	if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
-		ls_indicators_text = ls_indicators.get()
+		ls_indicators_research = ls_indicators.get()
 	else:
-		ls_indicators_text = ls_indicators.get() + ' ' + default_indicator
+		ls_indicators_research = ls_indicators.get() + ' ' + default_indicator
 
 	sample_file = [
 		nb_lab_journal.get(),
@@ -183,7 +217,7 @@ def excel_func():
 		stp_research.get(),
 		dt_st_research.get(),
 		dt_fn_research.get(),
-		ls_indicators_text,
+		ls_indicators_research,
 		sp_did_research.get(),
 		nt_sample.get()
 	]
@@ -202,11 +236,11 @@ def excel_func():
 		nt_register.get()
 	]
 
-	sheet_1.append(sample_file)
+	sheet_1.append(styled_cells(sample_file, sheet_1))
 	book_1.save(filename=path_sample_file)
 	path = os.path.realpath(path_sample_file)
 
-	sheet_2.append(register_file)
+	sheet_2.append(styled_cells(register_file, sheet_2))
 	book_2.save(filename=path_register_file)
 	path = os.path.realpath(path_register_file)
 
@@ -218,7 +252,7 @@ def excel_func():
 			nm_sample_executor.get(),
 			nt_sample.get(),
 			nt_register.get(),
-			ls_indicators_text,
+			ls_indicators_research,
 			det_nd_prep_sample.get(),
 			det_nd_research.get(),
 			sp_did_research.get(),
@@ -503,18 +537,43 @@ def history_window():
 		t0['state'] = tk.DISABLED
 
 	def confirm_to_main():
+		global default_indicator
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
+		print(value)
 		for i in range(len(variables_for_row)):
 			variables_for_row[i].delete(0, tk.END)
-			variables_for_row[i].insert(0, history_dict[value][i])
+			if i == 6:
+				indicator_names = history_dict[value][i]
+				if ' не обнаружены' in indicator_names:
+					indicator_names = indicator_names.replace(' не обнаружены', '')
+					variables_for_row[i].insert(0, indicator_names)
+					combo_indicators.current(0)
+				else:
+					indicator_names = indicator_names.replace(' обнаружены', '')
+					variables_for_row[i].insert(0, indicator_names)
+					combo_indicators.current(1)
+			else:
+				variables_for_row[i].insert(0, history_dict[value][i])
+
 
 	def confirm_empty_to_main():
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
 		for i in range(len(variables_for_row)):
 			if variables_for_row[i].get() == '':
-				variables_for_row[i].insert(0, history_dict[value][i])
+				if i == 6:
+					indicator_names = history_dict[value][i]
+					if ' не обнаружены' in indicator_names:
+						indicator_names = indicator_names.replace(' не обнаружены', '')
+						variables_for_row[i].insert(0, indicator_names)
+						combo_indicators.current(0)
+					else:
+						indicator_names = indicator_names.replace(' обнаружены', '')
+						variables_for_row[i].insert(0, indicator_names)
+						combo_indicators.current(1)
+				else:
+					variables_for_row[i].insert(0, history_dict[value][i])
 
 	def delete_from_csv():
 		selection = l0.curselection()
@@ -579,24 +638,24 @@ def clear_cell(index):
 def word_func(dict_for_word):
 	dict_first_item = next(iter(dict_for_word.values()))
 	executor = dict_first_item[9]
-	nd_names = dict_first_item[6]
+	indicator_names = dict_first_item[6]
 	sample_name = dict_first_item[1]
 	sample_name = sample_name.split('-')[:-1]
 	sample_name = ('-').join(sample_name)
 
-	if ' не обнаружены' in nd_names:
-		nd_names = nd_names.replace(' не обнаружены', '')
-		nd_result = 'Не обнаружено'
+	if ' не обнаружены' in indicator_names:
+		indicator_names = indicator_names.replace(' не обнаружены', '')
+		indicator_result = 'Не обнаружено'
 	else:
-		nd_names = nd_names.replace(' обнаружены', '')
-		nd_result = 'Обнаружено'
-	nd_names = nd_names.split(', ')
+		indicator_names = indicator_names.replace(' обнаружены', '')
+		indicator_result = 'Обнаружено'
+	indicator_names = indicator_names.split(', ')
 	nd_dict = {}
-	for name in nd_names:
+	for name in indicator_names:
 		nd_dict[name] = refactor_nd_codes[name]
 
 	indexes_nd_samples = len(dict_for_word)
-	list_samples = len(nd_names)
+	list_samples = len(indicator_names)
 
 	doc = docx.Document('docs/template.docx')
 
@@ -664,7 +723,7 @@ def word_func(dict_for_word):
 			nd_samples_frame(i, fullname=sample_fullname)
 			i += 1
 			for dict_name, code in nd_dict.items():
-				ls_indicators_frame(i, nd_cell_name=dict_name, nd_cell_code=code, nd_cell_result=nd_result)
+				ls_indicators_frame(i, nd_cell_name=dict_name, nd_cell_code=code, nd_cell_result=indicator_result)
 				i += 1
 
 		doc.add_paragraph('')
@@ -729,7 +788,14 @@ def start_window_for_word():
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
 		dict_for_word = {k: v for k, v in data_set_dict.items() if re.fullmatch(f"{value}{r'-\d+'}", k)}
-		dict_for_word = dict(sorted(dict_for_word.items()))
+		l1 = dict_for_word.keys()
+		d0 = {}
+		for i in l1:
+			row = i.split('-')
+			d0[int(row[-1])] = i
+		d0_new = dict(sorted(d0.items()))
+		d0 = list(d0_new.values())
+		dict_for_word = dict(sorted(dict_for_word.items(), key=lambda pair: d0.index(pair[0])))
 		word_func(dict_for_word)
 
 	def show_codes(evt):
@@ -738,7 +804,7 @@ def start_window_for_word():
 		w = evt.widget
 		value = w.get(int(w.curselection()[0]))
 		counter = 0
-		for i, row in enumerate(sorted(dict_for_data_set[value])):
+		for i, row in enumerate(dict_for_data_set[value]):
 			t0.insert(tk.INSERT, row + '\n')
 		t0['state'] = tk.DISABLED
 
@@ -749,7 +815,8 @@ def start_window_for_word():
 
 	data_set_dict = dict_from_csv()
 	data_set_list = list(data_set_dict)[::-1]
-
+	data_set_list = list(sorted(data_set_list, key=lambda x: int(x.split('-')[-1])))
+	print(data_set_list)
 	dict_for_data_set = defaultdict(list)
 	for i in data_set_list:
 		code = i.split('-')[:-1]
