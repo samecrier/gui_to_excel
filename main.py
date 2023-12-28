@@ -138,8 +138,6 @@ def write_history(row, type_record='a'):
 	with open('datas/query_history.csv', type_record, newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter='&')
 		writer.writerow(row)
-		writer.writerow(row)
-		writer.writerow(row)
 
 
 def excel_func():
