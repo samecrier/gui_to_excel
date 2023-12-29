@@ -9,14 +9,15 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from python_docx_replace import docx_replace
 from collections import defaultdict
 
+import datetime
 import openpyxl as op
 import pyperclip as clip
 from openpyxl.cell.cell import Cell
-from openpyxl.styles import PatternFill, Border, Side, Alignment, Font, GradientFill
+from openpyxl.styles import Border, Side, Alignment, Font
 import csv
 import docx
 import re
-from ctypes import windll
+from ctypes import windll  # установка разрешения
 import sys
 import os
 
@@ -64,12 +65,6 @@ def write_csv(row, filename, delimiter=';'):
 		writer = csv.writer(f, delimiter=delimiter)
 		writer.writerow(row)
 		f.close()
-
-
-def write_empty_csv(filename):
-	with open(filename, 'w', newline='', encoding='utf-8') as f:
-		f.close()
-		pass
 
 
 def settings_window():
@@ -152,166 +147,177 @@ def get_info():
 	print('_________________________________________________')
 
 
-def write_history(new_csv, type_record='a'):
+def write_history(new_csv, type_data='list', type_record='a'):
 	with open('datas/query_history.csv', type_record, newline='', encoding='utf-8') as f:
-		for row in new_csv:
+		if type_data == 'list':
+			for row in new_csv:
+				writer = csv.writer(f, delimiter='&')
+				writer.writerow(row)
+		if type_data == 'row':
 			writer = csv.writer(f, delimiter='&')
-			writer.writerow(row)
+			writer.writerow(new_csv)
 		f.close()
 
 
 def excel_func():
-	try:
-		def styled_cells(data, sheet):
-			if len(data) == 15:
-				for i, styled_cell in enumerate(data):
-					if i == 0:
-						styled_cell = int(styled_cell)
-					styled_cell = Cell(sheet, column="A", value=styled_cell)
-					styled_cell.font = Font(name='Calibri', size=11)
-					styled_cell.border = Border(left=Side(style='thin'),
-					                            right=Side(style='thin'),
-					                            top=Side(style='thin'),
-					                            bottom=Side(style='thin'))
-					styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
-					if i in (5, 6, 10, 11):
-						if i in (3, 4, 5, 7, 8, 9):
-							styled_cell.number_format = 'dd/mm/yyyy;@'
-							styled_cell.alignment = Alignment(horizontal='right')
-					yield styled_cell
-			else:
-				for i, styled_cell in enumerate(data):
-					if i == 0:
-						styled_cell = int(styled_cell)
-					styled_cell = Cell(sheet, column="A", value=styled_cell)
-					styled_cell.font = Font(name='Calibri', size=11)
-					styled_cell.border = Border(left=Side(style='thin'),
-					                            right=Side(style='thin'),
-					                            top=Side(style='thin'),
-					                            bottom=Side(style='thin'))
-					styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
-					if i in (3, 4, 5, 7, 8, 9):
-						styled_cell.number_format = 'dd/mm/yyyy;@'
-						styled_cell.alignment = Alignment(horizontal='right')
-					yield styled_cell
+	# try:
+	def styled_cells(data, sheet):
+		if len(data) == 15:
+			for i, styled_cell in enumerate(data):
+				if i == 0:
+					styled_cell = int(styled_cell)
+				if i in (5, 6, 10, 11):
+					styled_cell = datetime.datetime(int(styled_cell.split('.')[-1]), int(styled_cell.split('.')[1]),
+					                                int(styled_cell.split('.')[0]), 0, 0)
+				styled_cell = Cell(sheet, column="A", value=styled_cell)
+				styled_cell.font = Font(name='Calibri', size=11)
+				styled_cell.border = Border(left=Side(style='thin'),
+				                            right=Side(style='thin'),
+				                            top=Side(style='thin'),
+				                            bottom=Side(style='thin'))
+				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
+				if i in (5, 6, 10, 11):
+					styled_cell.number_format = 'dd/mm/yyyy;@'
+					styled_cell.alignment = Alignment(horizontal='right')
+				yield styled_cell
+		else:
+			for i, styled_cell in enumerate(data):
+				if i == 0:
+					styled_cell = int(styled_cell)
+				if i in (3, 4, 5, 7, 8, 9):
+					styled_cell = datetime.datetime(int(styled_cell.split('.')[-1]), int(styled_cell.split('.')[1]),
+					                                int(styled_cell.split('.')[0]), 0, 0)
+				styled_cell = Cell(sheet, column="A", value=styled_cell)
+				styled_cell.font = Font(name='Calibri', size=11)
+				styled_cell.border = Border(left=Side(style='thin'),
+				                            right=Side(style='thin'),
+				                            top=Side(style='thin'),
+				                            bottom=Side(style='thin'))
+				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
+				if i in (3, 4, 5, 7, 8, 9):
+					styled_cell.number_format = 'dd/mm/yyyy;@'
+					styled_cell.alignment = Alignment(horizontal='right')
+				yield styled_cell
 
-		if rg_nb_sample.get() == '':
-			messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
+	if rg_nb_sample.get() == '':
+		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
+		return
+	dict_keys = []
+	with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
+		csv_reader = csv.reader(f, delimiter='&')
+		for row in csv_reader:
+			dict_keys.append(row[1])
+		f.close()
+	if rg_nb_sample.get() in dict_keys:
+		answer = messagebox.askokcancel('Предупреждение',
+		                                'Данный регистрационный номер уже находится в базе. Если вы хотите заменить запись нажмите ок, если вы не хотите заменять запись нажмите отмена',
+		                                parent=win)
+		if answer == True:
+			old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
+			new_csv = []
+			for row in old_csv:
+				if rg_nb_sample.get() not in row:
+					new_csv.append(row)
+			write_history(new_csv, type_record='w')
+		if answer == False:
+			messagebox.showinfo('Информация', 'Изменение не будут применены к записи.')
 			return
-		dict_keys = []
-		with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
-			csv_reader = csv.reader(f, delimiter='&')
-			for row in csv_reader:
-				dict_keys.append(row[1])
-			f.close()
-		if rg_nb_sample.get() in dict_keys:
-			answer = messagebox.askokcancel('Предупреждение',
-			                                'Данный регистрационный номер уже находится в базе. Если вы хотите заменить запись нажмите ок, если вы не хотите заменять запись нажмите отмена',
-			                                parent=win)
-			if answer == True:
-				old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
-				write_empty_csv('datas/query_history.csv')
-				for row in old_csv:
-					if rg_nb_sample.get() not in row:
-						write_history(row, type_record='a')
-			if answer == False:
-				messagebox.showinfo('Информация', 'Изменение не будут применены к записи.')
-				return
 
-		if path_1 == '':
-			path_sample_file = 'docs\\test_file_sample.xlsx'
-		else:
-			path_sample_file = path_1
-		if path_2 == '':
-			path_register_file = 'docs\\test_file_register.xlsx'
-		else:
-			path_register_file = path_2
+	if path_1 == '':
+		path_sample_file = 'docs\\test_file_sample.xlsx'
+	else:
+		path_sample_file = path_1
+	if path_2 == '':
+		path_register_file = 'docs\\test_file_register.xlsx'
+	else:
+		path_register_file = path_2
 
-		book_1 = op.load_workbook(filename=path_sample_file)
-		sheet_1 = book_1.active
-		book_2 = op.load_workbook(filename=path_register_file)
-		sheet_2 = book_2.active
+	book_1 = op.load_workbook(filename=path_sample_file)
+	sheet_1 = book_1.active
+	book_2 = op.load_workbook(filename=path_register_file)
+	sheet_2 = book_2.active
 
-		if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
-			ls_indicators_research = ls_indicators.get()
-		else:
-			ls_indicators_research = ls_indicators.get() + ' ' + default_indicator
+	if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
+		ls_indicators_research = ls_indicators.get()
+	else:
+		ls_indicators_research = ls_indicators.get() + ' ' + default_indicator
 
-		sample_file = [
-			nb_lab_journal.get(),
-			rg_nb_sample.get(),
-			name_sample.get(),
-			det_nd_prep_sample.get(),
-			steps_sample.get(),
-			dt_st_sample_prep.get(),
-			dt_fn_sample_prep.get(),
-			nm_sample_executor.get(),
-			det_nd_research.get(),
-			stp_research.get(),
-			dt_st_research.get(),
-			dt_fn_research.get(),
-			ls_indicators_research,
-			sp_did_research.get(),
-			nt_sample.get()
-		]
-		register_file = [
-			nb_lab_journal.get(),
-			rg_nb_sample.get(),
-			name_sample.get(),
-			dt_st_sampling.get(),
-			dt_get_receipt.get(),
-			dt_st_research.get(),
-			ls_indicators.get(),
-			dt_fn_research.get(),
-			dt_disposal.get(),
-			dt_issue_protocol.get(),
-			rsp_executor.get(),
-			nt_register.get()
-		]
+	sample_file = [
+		nb_lab_journal.get(),  # 0
+		rg_nb_sample.get(),  # 1
+		name_sample.get(),  # 2
+		det_nd_prep_sample.get(),  # 3
+		steps_sample.get(),  # 4
+		dt_st_sample_prep.get(),  # 5
+		dt_fn_sample_prep.get(),  # 6
+		nm_sample_executor.get(),  # 7
+		det_nd_research.get(),  # 8
+		stp_research.get(),  # 9
+		dt_st_research.get(),  # 10
+		dt_fn_research.get(),  # 11
+		ls_indicators_research,  # 12
+		sp_did_research.get(),  # 13
+		nt_sample.get()  # 14
+	]
+	register_file = [
+		nb_lab_journal.get(),  # 0
+		rg_nb_sample.get(),  # 1
+		name_sample.get(),  # 2
+		dt_st_sampling.get(),  # 3
+		dt_get_receipt.get(),  # 4
+		dt_st_research.get(),  # 5
+		ls_indicators.get(),  # 6
+		dt_fn_research.get(),  # 7
+		dt_disposal.get(),  # 8
+		dt_issue_protocol.get(),  # 9
+		rsp_executor.get(),  # 10
+		nt_register.get()  # 11
+	]
 
-		sheet_1.append(styled_cells(sample_file, sheet_1))
-		book_1.save(filename=path_sample_file)
-		path = os.path.realpath(path_sample_file)
+	sheet_1.append(styled_cells(sample_file, sheet_1))
+	book_1.save(filename=path_sample_file)
+	path = os.path.realpath(path_sample_file)
 
-		sheet_2.append(styled_cells(register_file, sheet_2))
-		book_2.save(filename=path_register_file)
-		path = os.path.realpath(path_register_file)
+	sheet_2.append(styled_cells(register_file, sheet_2))
+	book_2.save(filename=path_register_file)
+	path = os.path.realpath(path_register_file)
 
-		write_history(
-			[
-				nb_lab_journal.get(),
-				rg_nb_sample.get(),
-				name_sample.get(),
-				nm_sample_executor.get(),
-				nt_sample.get(),
-				nt_register.get(),
-				ls_indicators_research,
-				det_nd_prep_sample.get(),
-				det_nd_research.get(),
-				sp_did_research.get(),
-				rsp_executor.get(),
-				dt_st_research.get(),
-				dt_st_sample_prep.get(),
-				dt_st_sampling.get(),
-				dt_get_receipt.get(),
-				dt_fn_research.get(),
-				dt_fn_sample_prep.get(),
-				dt_disposal.get(),
-				dt_issue_protocol.get(),
-				steps_sample.get(),
-				stp_research.get(),
-			]
-		)
+	write_history(
+		[
+			nb_lab_journal.get(),  # 0
+			rg_nb_sample.get(),  # 1
+			name_sample.get(),  # 2
+			nm_sample_executor.get(),  # 3
+			nt_sample.get(),  # 4
+			nt_register.get(),  # 5
+			ls_indicators_research,  # 6
+			det_nd_prep_sample.get(),  # 7
+			det_nd_research.get(),  # 8
+			sp_did_research.get(),  # 9
+			rsp_executor.get(),  # 10
+			dt_st_research.get(),  # 11
+			dt_st_sample_prep.get(),  # 12
+			dt_st_sampling.get(),  # 13
+			dt_get_receipt.get(),  # 14
+			dt_fn_research.get(),  # 15
+			dt_fn_sample_prep.get(),  # 16
+			dt_disposal.get(),  # 17
+			dt_issue_protocol.get(),  # 18
+			steps_sample.get(),  # 19
+			stp_research.get(),  # 20
+		], type_data='row'
+	)
 
-		if op_xl_button_value.get() == 'No':
-			print('Сохранение в эксель без открытия')
-			return
-		os.startfile(path_sample_file)
-		os.startfile(path_register_file)
-		print('Сохранение в эксель с открытием ')
+	if op_xl_button_value.get() == 'No':
+		print('Сохранение в эксель без открытия')
+		return
+	os.startfile(path_sample_file)
+	os.startfile(path_register_file)
+	print('Сохранение в эксель с открытием ')
 
-	except:
-		messagebox.showerror('Ошибка', 'Введен неправильный формат данных', parent=win)
+
+# except:
+# 	messagebox.showerror('Ошибка', 'Введен неправильный формат данных', parent=win)
 
 
 def get_file_1():
@@ -614,7 +620,6 @@ def history_window():
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
 		old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
-		write_empty_csv('datas/query_history.csv')
 		new_csv = []
 		for row in old_csv:
 			if value not in row:
@@ -628,7 +633,7 @@ def history_window():
 					t0.delete(0.0, tk.END)
 					l0.delete(selection[0])
 					t0['state'] = tk.DISABLED
-		write_history(new_csv)
+		write_history(new_csv, type_record='w')
 
 	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
 	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
@@ -873,6 +878,536 @@ def start_window_for_word():
 	b1.grid(row=1, column=1, pady=20)
 
 
+def refresh_base_from_excel():
+	def add_all_datas(load=True):
+		book_1 = op.load_workbook(filename='docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx')
+		sheet_1 = book_1.active
+
+		book_2 = op.load_workbook(filename='docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx')
+		sheet_2 = book_2.active
+
+		raw_data_sample = []
+		for i, row in enumerate(sheet_1.iter_rows(min_row=5, values_only=True)):
+			formatted_row = []
+			row = list(row)
+			if str(row[0]).isdigit():
+				row = row[0:15]
+				for index in (5, 6, 10, 11):
+					try:
+						row[index] = row[index].strftime('%d.%m.%Y')
+					except:
+						pass
+				for string in row:
+					try:
+						formatted_row.append(string.strip())
+					except:
+						formatted_row.append(string)
+				raw_data_sample.append(formatted_row)
+
+		raw_data_register = []
+		for i, row in enumerate(sheet_2.iter_rows(min_row=5, values_only=True)):
+			formatted_row = []
+			row = list(row)
+			if str(row[0]).isdigit():
+				row = row[0:12]
+				for index in (3, 4, 5, 7, 8, 9):
+					try:
+						row[index] = row[index].strftime('%d.%m.%Y')
+					except:
+						pass
+				for string in row:
+					try:
+						formatted_row.append(string.strip())
+					except:
+						formatted_row.append(string)
+				raw_data_register.append(formatted_row)
+
+		dict_sample = {}
+		dict_register = {}
+		for row in raw_data_sample:
+			dict_key = row[1]
+			dict_values = row
+			dict_sample[dict_key] = dict_values
+		for row in raw_data_register:
+			dict_key = row[1]
+			dict_values = row
+			dict_register[dict_key] = dict_values
+
+		sample_keys = set(dict_sample.keys())
+		register_keys = set(dict_register.keys())
+
+		full_dict = defaultdict(list)
+		full_set = sample_keys | register_keys
+
+		for code in full_set:
+			try:
+				full_dict[code].append(dict_sample[code])
+			except KeyError:
+				full_dict[code].append(['' for x in range(0, 15)])
+			try:
+				full_dict[code].append(dict_register[code])
+			except KeyError:
+				full_dict[code].append(['' for x in range(0, 12)])
+
+		final_datas = []
+		for key, value in full_dict.items():
+			# 0 nb_lab_journal.get()
+			# print(value)
+			if value[0][0] == value[1][0]:
+				cell0 = value[0][0]
+			elif value[0][0] == '':
+				cell0 = value[1][0]
+			elif value[1][0] == '':
+				cell0 = value[0][0]
+			else:
+				cell0 = value[0][0]
+
+			# 1 rg_nb_sample.get() s[1] r[1]
+			if value[0][1] == value[1][1]:
+				cell1 = value[0][1]
+			elif value[0][1] == '':
+				cell1 = value[1][1]
+			elif value[1][1] == '':
+				cell1 = value[0][1]
+			else:
+				cell1 = value[0][1]
+
+			# 2 name_sample.get() s[2] r[2]
+			if value[0][2] == value[1][2]:
+				cell2 = value[0][2]
+			elif value[0][2] == '':
+				cell2 = value[1][2]
+			elif value[1][2] == '':
+				cell2 = value[0][2]
+			else:
+				cell2 = value[0][2]
+
+			# 3 nm_sample_executor.get() s[7]
+			cell3 = value[0][7]
+
+			# 4 nt_sample.get() s[14]
+			cell4 = value[0][14]
+
+			# 5 nt_register.get() r[11]
+			cell5 = value[1][11]
+
+			# 6 ls_indicators_research s[12]
+			cell6 = value[0][12]
+
+			# 7 det_nd_prep_sample.get() s[3]
+			cell7 = value[0][3]
+
+			# 8 det_nd_research.get() s[8]
+			cell8 = value[0][8]
+
+			# 9 sp_did_research.get() s[13]
+			cell9 = value[0][13]
+
+			# 10 rsp_executor.get() r[10]
+			cell10 = value[1][10]
+
+			# 11 dt_st_research.get() s[10] r[5]
+			if value[0][10] == value[1][5]:
+				cell11 = value[0][10]
+			elif value[0][10] == '':
+				cell11 = value[1][5]
+			elif value[1][5] == '':
+				cell11 = value[0][10]
+			else:
+				st_sample_date = value[0][10]
+				st_register_date = value[1][5]
+				try:
+					datetime_st_sample_date = datetime.datetime.strptime(st_sample_date, '%d.%m.%Y')
+				except:
+					pass
+				try:
+					datetime_st_register_date = datetime.datetime.strptime(st_register_date, '%d.%m.%Y')
+				except:
+					pass
+				if datetime_st_sample_date != '' and datetime_st_register_date != '':
+					if datetime_st_sample_date > datetime_st_register_date:
+						cell11 = st_sample_date
+					else:
+						cell11 = st_register_date
+				elif datetime_st_sample_date == '' and datetime_st_register_date != '':
+					cell11 = datetime_st_register_date
+				elif datetime_st_sample_date != '' and datetime_st_register_date == '':
+					cell11 = datetime_st_sample_date
+				else:
+					cell11 = '-'
+
+			# 12 dt_st_sample_prep.get() s[5]
+			cell12 = value[0][5]
+
+			# 13 dt_st_sampling.get() r[3]
+			cell13 = value[1][3]
+
+			# 14 dt_get_receipt.get() r[4]
+			cell14 = value[1][4]
+
+			# 15 dt_fn_research.get() s[11] r[7]
+			if value[0][11] == value[1][7]:
+				cell15 = value[0][11]
+			elif value[0][11] == '':
+				cell15 = value[1][7]
+			elif value[1][7] == '':
+				cell15 = value[0][11]
+			else:
+				fn_sample_date = value[0][11]
+				fn_register_date = value[1][7]
+				datetime_fn_sample_date = ''
+				datetime_fn_register_date = ''
+				try:
+					datetime_fn_sample_date = datetime.datetime.strptime(fn_sample_date, '%d.%m.%Y')
+				except:
+					pass
+				try:
+					datetime_fn_register_date = datetime.datetime.strptime(fn_register_date, '%d.%m.%Y')
+				except:
+					pass
+				if datetime_fn_sample_date != '' and datetime_fn_register_date != '':
+					if datetime_fn_sample_date > datetime_fn_register_date:
+						cell15 = fn_sample_date
+					else:
+						cell15 = fn_register_date
+				elif datetime_fn_sample_date == '' and datetime_fn_register_date != '':
+					cell15 = datetime_fn_register_date
+				elif datetime_fn_sample_date != '' and datetime_fn_register_date == '':
+					cell15 = datetime_fn_sample_date
+				else:
+					cell15 = '-'
+
+			# 16 dt_fn_sample_prep.get() s[6]
+			cell16 = value[0][6]
+
+			# 17 dt_disposal.get() r[8]
+			cell17 = value[1][8]
+
+			# 18 dt_issue_protocol.get() r[9]
+			cell18 = value[1][9]
+
+			# 19 steps_sample.get() s[4]
+			cell19 = value[0][4]
+
+			# 20 stp_research.get() s[9]
+			cell20 = value[0][9]
+
+			to_final_data = [
+				cell0,  # nb_lab_journal.get(), s[0] r[0]
+				cell1,  # rg_nb_sample.get(), s[1] r[1]
+				cell2,  # name_sample.get(), s[2] r[2]
+				cell3,  # nm_sample_executor.get(), s[7]
+				cell4,  # nt_sample.get(), s[14]
+				cell5,  # nt_register.get(), r[11]
+				cell6,  # ls_indicators_research, s[12]
+				cell7,  # det_nd_prep_sample.get(), s[3]
+				cell8,  # det_nd_research.get(), s[8]
+				cell9,  # sp_did_research.get(), s[13]
+				cell10,  # rsp_executor.get(), r[10]
+				cell11,  # dt_st_research.get(), s[10] r[5]
+				cell12,  # dt_st_sample_prep.get(), s[5]
+				cell13,  # dt_st_sampling.get(), r[3]
+				cell14,  # dt_get_receipt.get(), r[4]
+				cell15,  # dt_fn_research.get(), s[11] r[7]
+				cell16,  # dt_fn_sample_prep.get(), s[6]
+				cell17,  # dt_disposal.get(), r[8]
+				cell18,  # dt_issue_protocol.get(), r[9]
+				cell19,  # steps_sample.get(), s[4]
+				cell20,  # stp_research.get(), s[9]
+			]
+			final_datas.append(to_final_data)
+
+		final_datas.sort(key=lambda x: x[0])
+		if load:
+			with open('datas/query_history.csv', 'a', encoding='utf-8', newline='') as f:
+				for row in final_datas:
+					writer = csv.writer(f, delimiter='&')
+					writer.writerow(row)
+				f.close()
+		if load == False:
+			return final_datas
+
+	def add_only_new_position():
+		book_1 = op.load_workbook(filename='docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx')
+		sheet_1 = book_1.active
+
+		book_2 = op.load_workbook(filename='docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx')
+		sheet_2 = book_2.active
+
+		raw_data_sample = []
+		for i, row in enumerate(sheet_1.iter_rows(min_row=5, values_only=True)):
+			formatted_row = []
+			row = list(row)
+			if str(row[0]).isdigit():
+				row = row[0:15]
+				for index in (5, 6, 10, 11):
+					try:
+						row[index] = row[index].strftime('%d.%m.%Y')
+					except:
+						pass
+				for string in row:
+					try:
+						formatted_row.append(string.strip())
+					except:
+						formatted_row.append(string)
+				raw_data_sample.append(formatted_row)
+
+		raw_data_register = []
+		for i, row in enumerate(sheet_2.iter_rows(min_row=5, values_only=True)):
+			formatted_row = []
+			row = list(row)
+			if str(row[0]).isdigit():
+				row = row[0:12]
+				for index in (3, 4, 5, 7, 8, 9):
+					try:
+						row[index] = row[index].strftime('%d.%m.%Y')
+					except:
+						pass
+				for string in row:
+					try:
+						formatted_row.append(string.strip())
+					except:
+						formatted_row.append(string)
+				raw_data_register.append(formatted_row)
+
+		dict_sample = {}
+		dict_register = {}
+		for row in raw_data_sample:
+			dict_key = row[1]
+			dict_values = row
+			dict_sample[dict_key] = dict_values
+		for row in raw_data_register:
+			dict_key = row[1]
+			dict_values = row
+			dict_register[dict_key] = dict_values
+
+		sample_keys = set(dict_sample.keys())
+		register_keys = set(dict_register.keys())
+
+		full_dict = defaultdict(list)
+		full_set = sample_keys | register_keys
+		query_history_set = set(dict_from_csv().keys())
+		full_new_set = full_set - query_history_set  ### какие были загружены
+
+		for code in full_new_set:
+			try:
+				full_dict[code].append(dict_sample[code])
+			except KeyError:
+				full_dict[code].append(['' for x in range(0, 15)])
+			try:
+				full_dict[code].append(dict_register[code])
+			except KeyError:
+				full_dict[code].append(['' for x in range(0, 12)])
+
+		final_datas = []
+		for key, value in full_dict.items():
+			# 0 nb_lab_journal.get()
+			if value[0][0] == value[1][0]:
+				cell0 = value[0][0]
+			elif value[0][0] == '':
+				cell0 = value[1][0]
+			elif value[1][0] == '':
+				cell0 = value[0][0]
+			else:
+				cell0 = value[0][0]
+
+			# 1 rg_nb_sample.get() s[1] r[1]
+			if value[0][1] == value[1][1]:
+				cell1 = value[0][1]
+			elif value[0][1] == '':
+				cell1 = value[1][1]
+			elif value[1][1] == '':
+				cell1 = value[0][1]
+			else:
+				cell1 = value[0][1]
+
+			# 2 name_sample.get() s[2] r[2]
+			if value[0][2] == value[1][2]:
+				cell2 = value[0][2]
+			elif value[0][2] == '':
+				cell2 = value[1][2]
+			elif value[1][2] == '':
+				cell2 = value[0][2]
+			else:
+				cell2 = value[0][2]
+
+			# 3 nm_sample_executor.get() s[7]
+			cell3 = value[0][7]
+
+			# 4 nt_sample.get() s[14]
+			cell4 = value[0][14]
+
+			# 5 nt_register.get() r[11]
+			cell5 = value[1][11]
+
+			# 6 ls_indicators_research s[12]
+			cell6 = value[0][12]
+
+			# 7 det_nd_prep_sample.get() s[3]
+			cell7 = value[0][3]
+
+			# 8 det_nd_research.get() s[8]
+			cell8 = value[0][8]
+
+			# 9 sp_did_research.get() s[13]
+			cell9 = value[0][13]
+
+			# 10 rsp_executor.get() r[10]
+			cell10 = value[1][10]
+
+			# 11 dt_st_research.get() s[10] r[5]
+			if value[0][10] == value[1][5]:
+				cell11 = value[0][10]
+			elif value[0][10] == '':
+				cell11 = value[1][5]
+			elif value[1][5] == '':
+				cell11 = value[0][10]
+			else:
+				st_sample_date = value[0][10]
+				st_register_date = value[1][5]
+				datetime_st_sample_date = ''
+				datetime_st_register_date = ''
+				try:
+					datetime_st_sample_date = datetime.datetime.strptime(st_sample_date, '%d.%m.%Y')
+				except:
+					pass
+				try:
+					datetime_st_register_date = datetime.datetime.strptime(st_register_date, '%d.%m.%Y')
+				except:
+					pass
+				if datetime_st_sample_date != '' and datetime_st_register_date != '':
+					if datetime_st_sample_date > datetime_st_register_date:
+						cell11 = st_sample_date
+					else:
+						cell11 = st_register_date
+				elif datetime_st_sample_date == '' and datetime_st_register_date != '':
+					cell11 = datetime_st_register_date
+				elif datetime_st_sample_date != '' and datetime_st_register_date == '':
+					cell11 = datetime_st_sample_date
+				else:
+					cell11 = '-'
+
+			# 12 dt_st_sample_prep.get() s[5]
+			cell12 = value[0][5]
+
+			# 13 dt_st_sampling.get() r[3]
+			cell13 = value[1][3]
+
+			# 14 dt_get_receipt.get() r[4]
+			cell14 = value[1][4]
+
+			# 15 dt_fn_research.get() s[11] r[7]
+			if value[0][11] == value[1][7]:
+				cell15 = value[0][11]
+			elif value[0][11] == '':
+				cell15 = value[1][7]
+			elif value[1][7] == '':
+				cell15 = value[0][11]
+			else:
+				fn_sample_date = value[0][11]
+				fn_register_date = value[1][7]
+				datetime_fn_sample_date = ''
+				datetime_fn_register_date = ''
+				try:
+					datetime_fn_sample_date = datetime.datetime.strptime(fn_sample_date, '%d.%m.%Y')
+				except:
+					pass
+				try:
+					datetime_fn_register_date = datetime.datetime.strptime(fn_register_date, '%d.%m.%Y')
+				except:
+					pass
+				if datetime_fn_sample_date != '' and datetime_fn_register_date != '':
+					if datetime_fn_sample_date > datetime_fn_register_date:
+						cell15 = fn_sample_date
+					else:
+						cell15 = fn_register_date
+				elif datetime_fn_sample_date == '' and datetime_fn_register_date != '':
+					cell15 = datetime_fn_register_date
+				elif datetime_fn_sample_date != '' and datetime_fn_register_date == '':
+					cell15 = datetime_fn_sample_date
+				else:
+					cell15 = '-'
+
+			# 16 dt_fn_sample_prep.get() s[6]
+			cell16 = value[0][6]
+
+			# 17 dt_disposal.get() r[8]
+			cell17 = value[1][8]
+
+			# 18 dt_issue_protocol.get() r[9]
+			cell18 = value[1][9]
+
+			# 19 steps_sample.get() s[4]
+			cell19 = value[0][4]
+
+			# 20 stp_research.get() s[9]
+			cell20 = value[0][9]
+
+			to_final_data = [
+				cell0,  # nb_lab_journal.get(), s[0] r[0]
+				cell1,  # rg_nb_sample.get(), s[1] r[1]
+				cell2,  # name_sample.get(), s[2] r[2]
+				cell3,  # nm_sample_executor.get(), s[7]
+				cell4,  # nt_sample.get(), s[14]
+				cell5,  # nt_register.get(), r[11]
+				cell6,  # ls_indicators_research, s[12]
+				cell7,  # det_nd_prep_sample.get(), s[3]
+				cell8,  # det_nd_research.get(), s[8]
+				cell9,  # sp_did_research.get(), s[13]
+				cell10,  # rsp_executor.get(), r[10]
+				cell11,  # dt_st_research.get(), s[10] r[5]
+				cell12,  # dt_st_sample_prep.get(), s[5]
+				cell13,  # dt_st_sampling.get(), r[3]
+				cell14,  # dt_get_receipt.get(), r[4]
+				cell15,  # dt_fn_research.get(), s[11] r[7]
+				cell16,  # dt_fn_sample_prep.get(), s[6]
+				cell17,  # dt_disposal.get(), r[8]
+				cell18,  # dt_issue_protocol.get(), r[9]
+				cell19,  # steps_sample.get(), s[4]
+				cell20,  # stp_research.get(), s[9]
+			]
+			final_datas.append(to_final_data)
+
+		final_datas.sort(key=lambda x: x[0])
+
+	def refresh_changes():
+
+		query_history_dict = dict_from_csv()
+
+		dict_from_excel = {}
+		for row in add_all_datas(load=False):
+			dict_key = row[1]
+			row[0] = str(row[0])
+			dict_values = ['' if v is None else v for v in row]
+			dict_from_excel[dict_key] = dict_values
+
+		dict_from_excel_codes = dict_from_excel.keys()
+		for code in dict_from_excel_codes:
+			try:
+				str_1 = ('&').join(dict_from_excel[code])
+				str_2 = ('&').join(query_history_dict[code])
+				if str_1 == str_2:
+					pass
+				else:
+					print(str_1, '////////', str_2)
+			except:
+				pass
+
+	####################################НАЧАЛО ФУНКЦИИ
+	window_for_refresh_base = tk.Toplevel(win)  # нельзя нажимать в других окнах
+	window_for_refresh_base.title('Окно 1')
+	window_for_refresh_base.geometry(f'{int(600.0 * scaling)}x{int(500.0 * scaling)}+1000+350')
+	window_for_refresh_base.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+	tk.Button(window_for_refresh_base, text='Загрузить все в базу', command=add_all_datas).grid(row=0, column=0,
+	                                                                                            stick='w')
+	tk.Button(window_for_refresh_base, text='Загрузить только новые номера', command=add_only_new_position).grid(row=0,
+	                                                                                                             column=1,
+	                                                                                                             stick='w')
+	tk.Button(window_for_refresh_base, text='Обновить все изменения из excel', command=refresh_changes).grid(row=0,
+	                                                                                                         column=2,
+	                                                                                                         stick='w')
+
+
 # двойное
 tk.Label(win, text='Номер лабораторного журнала').grid(row=0, column=0, stick='e')
 nb_lab_journal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
@@ -1112,10 +1647,9 @@ op_xl_button.grid(row=22, column=4, stick='w')
 # Кнопка на сервер
 tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, stick='e',
                                                                                       pady=10)
-
-tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=lambda: start_window_for_word()).grid(
-	row=100, column=1, stick='e',
-	pady=10)
+tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=start_window_for_word).grid(
+	row=100, column=1, stick='e', pady=10)
+tk.Button(win, text='Добавить в базу из excel', command=refresh_base_from_excel).grid(row=100, column=4, stick='w')
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
                      ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
