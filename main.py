@@ -108,7 +108,7 @@ def _copy(event):
 windll.shcore.SetProcessDpiAwareness(1)
 win.tk.call('tk', 'scaling', scaling)
 # отменить скейлинг
-win.geometry(f'{int(775.0 * scaling)}x{int(550.0 * scaling)}+50+50')
+win.geometry(f'{int(800.0 * scaling)}x{int(550.0 * scaling)}+50+50')
 win.title('Программа')
 win.event_delete('<<Paste>>', '<Control-V>')
 win.event_delete('<<Copy>>', '<Control-C>')
@@ -573,7 +573,6 @@ def history_window():
 		t0.delete(0.0, tk.END)
 		w = evt.widget
 		value = w.get(int(w.curselection()[0]))
-		counter = 0
 		for i, row in enumerate(history_dict[value]):
 			t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
 		t0['state'] = tk.DISABLED
@@ -846,7 +845,6 @@ def start_window_for_word():
 		t0.delete(0.0, tk.END)
 		w = evt.widget
 		value = w.get(int(w.curselection()[0]))
-		counter = 0
 		for i, row in enumerate(dict_for_data_set[value]):
 			t0.insert(tk.INSERT, row + '\n')
 		t0['state'] = tk.DISABLED
@@ -858,12 +856,23 @@ def start_window_for_word():
 
 	data_set_dict = dict_from_csv()
 	data_set_list = list(data_set_dict)[::-1]
-	data_set_list = list(sorted(data_set_list, key=lambda x: int(x.split('-')[-1])))
+	# data_set_list = list(sorted(data_set_list, key=lambda x: int(x.split('-')[-1])))
 	dict_for_data_set = defaultdict(list)
 	for i in data_set_list:
-		code = i.split('-')[:-1]
-		code = ('-').join(code)
+		try:
+			code = i.split('-')
+			if len(code) > 3:
+				code = ('-').join(code[:-1])
+			else:
+				code = i
+		except:
+			code = i
 		dict_for_data_set[code].append(i)
+	print(dict_for_data_set)
+	for key in dict_for_data_set.keys():
+		if len(dict_for_data_set[key]) > 1:
+			print(dict_for_data_set[key])
+			dict_for_data_set[key] = sorted(dict_for_data_set[key], key=lambda y: int(y.split('-')[-1]))
 
 	sample_codes = [key for key in dict_for_data_set]
 
@@ -899,6 +908,10 @@ def refresh_base_from_excel():
 						pass
 				for string in row:
 					try:
+						string = string.replace('\n', ' ')
+					except (TypeError, AttributeError):
+						pass
+					try:
 						formatted_row.append(string.strip())
 					except:
 						formatted_row.append(string)
@@ -925,11 +938,23 @@ def refresh_base_from_excel():
 		dict_sample = {}
 		dict_register = {}
 		for row in raw_data_sample:
-			dict_key = row[1]
+			dict_key = 'неизвестный номер'
+			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
+				dict_key = row[1]
+			else:
+				for row_register in raw_data_register:
+					if row[0] == row_register[0]:
+						dict_key = row_register[1]
 			dict_values = row
 			dict_sample[dict_key] = dict_values
 		for row in raw_data_register:
-			dict_key = row[1]
+			dict_key = 'неизвестный номер'
+			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
+				dict_key = row[1]
+			else:
+				for row_sample in raw_data_sample:
+					if row[0] == row_sample[0]:
+						dict_key = row_sample[1]
 			dict_values = row
 			dict_register[dict_key] = dict_values
 
@@ -970,7 +995,10 @@ def refresh_base_from_excel():
 			elif value[1][1] == '':
 				cell1 = value[0][1]
 			else:
-				cell1 = value[0][1]
+				if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", value[0][1]):
+					cell1 = value[0][1]
+				else:
+					cell1 = value[1][1]
 
 			# 2 name_sample.get() s[2] r[2]
 			if value[0][2] == value[1][2]:
@@ -1147,6 +1175,10 @@ def refresh_base_from_excel():
 						pass
 				for string in row:
 					try:
+						string = string.replace('\n', ' ')
+					except (TypeError, AttributeError):
+						pass
+					try:
 						formatted_row.append(string.strip())
 					except:
 						formatted_row.append(string)
@@ -1173,11 +1205,23 @@ def refresh_base_from_excel():
 		dict_sample = {}
 		dict_register = {}
 		for row in raw_data_sample:
-			dict_key = row[1]
+			dict_key = 'неизвестный номер'
+			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
+				dict_key = row[1]
+			else:
+				for row_register in raw_data_register:
+					if row[0] == row_register[0]:
+						dict_key = row_register[1]
 			dict_values = row
 			dict_sample[dict_key] = dict_values
 		for row in raw_data_register:
-			dict_key = row[1]
+			dict_key = 'неизвестный номер'
+			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
+				dict_key = row[1]
+			else:
+				for row_sample in raw_data_sample:
+					if row[0] == row_sample[0]:
+						dict_key = row_sample[1]
 			dict_values = row
 			dict_register[dict_key] = dict_values
 
@@ -1219,7 +1263,10 @@ def refresh_base_from_excel():
 			elif value[1][1] == '':
 				cell1 = value[0][1]
 			else:
-				cell1 = value[0][1]
+				if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", value[0][1]):
+					cell1 = value[0][1]
+				else:
+					cell1 = value[1][1]
 
 			# 2 name_sample.get() s[2] r[2]
 			if value[0][2] == value[1][2]:
@@ -1372,7 +1419,38 @@ def refresh_base_from_excel():
 
 	def refresh_changes():
 
+		infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы',
+		                     'Наименование пробы(образца)',
+		                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
+		                     'Примечания регистрационного журнала', 'Перечень показателей через запятую',
+		                     'Реквизиты НД для проведения пробоподготовки',
+		                     'Реквизиты НД на метод исследования', 'ФИО специалиста проводившего исследование',
+		                     'ФИО ответственного исполнителя', 'Дата начала исследования',
+		                     'Дата начала пробоподготовки',
+		                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
+		                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
+		                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
+		def choose_changes(evt):
+			t0['state'] = tk.NORMAL
+			t0.delete(0.0, tk.END)
+			w = evt.widget
+			value = w.get(int(w.curselection()[0]))
+			for i, row in enumerate(query_history_dict_checker[value]):
+				t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+			t0['state'] = tk.DISABLED
+
+			t1['state'] = tk.NORMAL
+			t1.delete(0.0, tk.END)
+			w = evt.widget
+			value = w.get(int(w.curselection()[0]))
+			for i, row in enumerate(query_history_dict[value]):
+				if query_history_dict[value][i] != query_history_dict_checker[value][i]:
+					t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'warning')
+				else:
+					t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+			t1['state'] = tk.DISABLED
 		query_history_dict = dict_from_csv()
+		query_history_dict_checker = query_history_dict.copy()
 
 		dict_from_excel = {}
 		for row in add_all_datas(load=False):
@@ -1382,16 +1460,58 @@ def refresh_base_from_excel():
 			dict_from_excel[dict_key] = dict_values
 
 		dict_from_excel_codes = dict_from_excel.keys()
+		counter_of_changes = 0
+		query_history_changes = []
 		for code in dict_from_excel_codes:
 			try:
 				str_1 = ('&').join(dict_from_excel[code])
-				str_2 = ('&').join(query_history_dict[code])
-				if str_1 == str_2:
-					pass
-				else:
-					print(str_1, '////////', str_2)
-			except:
+				try:
+					str_2 = ('&').join(query_history_dict[code])
+				except KeyError:
+					str_2 = None
+				if str_1 != str_2:
+					query_history_dict[code] = dict_from_excel[code]
+					query_history_changes.append(code)
+					counter_of_changes += 1
+			except TypeError:
 				pass
+
+		query_history_dict_keys = list(query_history_dict.keys())
+		for key in query_history_dict_keys:
+			if key in dict_from_excel_codes:
+				pass
+			else:
+				del query_history_dict[key]
+				query_history_changes.append(key)
+				counter_of_changes += 1
+		if counter_of_changes == 0:
+			messagebox.showinfo('готово', 'изменений нет', parent=window_for_refresh_base)
+		else:
+			refresh_changes_window = tk.Toplevel(window_for_refresh_base)
+			refresh_changes_window.title('Окно 2')
+			refresh_changes_window.geometry(f'{int(1200.0 * scaling)}x{int(500.0 * scaling)}+1200+400')
+			refresh_changes_window.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
+
+			# for code in query_history_changes:
+			# 	print(query_history_dict_checker[code], query_history_dict[code], sep='\n')
+
+			print(query_history_changes)
+			list_var_changes = tk.Variable(value=query_history_changes)
+			l0 = tk.Listbox(refresh_changes_window, listvariable=list_var_changes,
+			                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+			l0.grid(row=0, column=0, stick='e')
+			l0.bind('<<ListboxSelect>>', choose_changes)
+
+			t0 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+			t0.grid(row=0, column=1, padx=5)
+
+			t1 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+			t1.tag_configure("warning", foreground="red")
+			t1.grid(row=0, column=2, padx=5)
+
+			# write_history(query_history_dict.values(), type_record='w')
+			# print(f'было принято {counter_of_changes} изменений')
 
 	####################################НАЧАЛО ФУНКЦИИ
 	window_for_refresh_base = tk.Toplevel(win)  # нельзя нажимать в других окнах
@@ -1649,7 +1769,7 @@ tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=ex
                                                                                       pady=10)
 tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=start_window_for_word).grid(
 	row=100, column=1, stick='e', pady=10)
-tk.Button(win, text='Добавить в базу из excel', command=refresh_base_from_excel).grid(row=100, column=4, stick='w')
+tk.Button(win, text='Добавить в историю из excel', command=refresh_base_from_excel).grid(row=100, column=4, stick='w')
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
                      ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
