@@ -887,767 +887,515 @@ def start_window_for_word():
 	b1.grid(row=1, column=1, pady=20)
 
 
-def refresh_base_from_excel():
-	def add_all_datas(load=True):
-		book_1 = op.load_workbook(filename='docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx')
-		sheet_1 = book_1.active
+def add_all_datas(load=True):
+	book_1 = op.load_workbook(filename='docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx')
+	sheet_1 = book_1.active
 
-		book_2 = op.load_workbook(filename='docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx')
-		sheet_2 = book_2.active
+	book_2 = op.load_workbook(filename='docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx')
+	sheet_2 = book_2.active
 
-		raw_data_sample = []
-		for i, row in enumerate(sheet_1.iter_rows(min_row=5, values_only=True)):
-			formatted_row = []
-			row = list(row)
-			if str(row[0]).isdigit():
-				row = row[0:15]
-				for index in (5, 6, 10, 11):
-					try:
-						row[index] = row[index].strftime('%d.%m.%Y')
-					except:
-						pass
-				for string in row:
-					try:
-						string = string.replace('\n', ' ')
-					except (TypeError, AttributeError):
-						pass
-					try:
-						formatted_row.append(string.strip())
-					except:
-						formatted_row.append(string)
-				raw_data_sample.append(formatted_row)
+	raw_data_sample = []
+	for i, row in enumerate(sheet_1.iter_rows(min_row=5, values_only=True)):
+		formatted_row = []
+		row = list(row)
+		if str(row[0]).isdigit():
+			row = row[0:15]
+			for index in (5, 6, 10, 11):
+				try:
+					row[index] = row[index].strftime('%d.%m.%Y')
+				except:
+					pass
+			for string in row:
+				try:
+					string = string.replace('\n', ' ')
+				except (TypeError, AttributeError):
+					pass
+				try:
+					formatted_row.append(string.strip())
+				except:
+					formatted_row.append(string)
+			raw_data_sample.append(formatted_row)
 
-		raw_data_register = []
-		for i, row in enumerate(sheet_2.iter_rows(min_row=5, values_only=True)):
-			formatted_row = []
-			row = list(row)
-			if str(row[0]).isdigit():
-				row = row[0:12]
-				for index in (3, 4, 5, 7, 8, 9):
-					try:
-						row[index] = row[index].strftime('%d.%m.%Y')
-					except:
-						pass
-				for string in row:
-					try:
-						formatted_row.append(string.strip())
-					except:
-						formatted_row.append(string)
-				raw_data_register.append(formatted_row)
+	raw_data_register = []
+	for i, row in enumerate(sheet_2.iter_rows(min_row=5, values_only=True)):
+		formatted_row = []
+		row = list(row)
+		if str(row[0]).isdigit():
+			row = row[0:12]
+			for index in (3, 4, 5, 7, 8, 9):
+				try:
+					row[index] = row[index].strftime('%d.%m.%Y')
+				except:
+					pass
+			for string in row:
+				try:
+					formatted_row.append(string.strip())
+				except:
+					formatted_row.append(string)
+			raw_data_register.append(formatted_row)
 
-		dict_sample = {}
-		dict_register = {}
-		for row in raw_data_sample:
-			dict_key = 'неизвестный номер'
-			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
-				dict_key = row[1]
-			else:
-				for row_register in raw_data_register:
-					if row[0] == row_register[0]:
-						dict_key = row_register[1]
-			dict_values = row
-			dict_sample[dict_key] = dict_values
-		for row in raw_data_register:
-			dict_key = 'неизвестный номер'
-			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
-				dict_key = row[1]
-			else:
-				for row_sample in raw_data_sample:
-					if row[0] == row_sample[0]:
-						dict_key = row_sample[1]
-			dict_values = row
-			dict_register[dict_key] = dict_values
+	dict_sample = {}
+	dict_register = {}
+	for row in raw_data_sample:
+		dict_key = 'неизвестный номер'
+		if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
+			dict_key = row[1]
+		else:
+			for row_register in raw_data_register:
+				if row[0] == row_register[0]:
+					dict_key = row_register[1]
+		dict_values = row
+		dict_sample[dict_key] = dict_values
+	for row in raw_data_register:
+		dict_key = 'неизвестный номер'
+		if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
+			dict_key = row[1]
+		else:
+			for row_sample in raw_data_sample:
+				if row[0] == row_sample[0]:
+					dict_key = row_sample[1]
+		dict_values = row
+		dict_register[dict_key] = dict_values
 
-		sample_keys = set(dict_sample.keys())
-		register_keys = set(dict_register.keys())
+	sample_keys = set(dict_sample.keys())
+	register_keys = set(dict_register.keys())
 
-		full_dict = defaultdict(list)
-		full_set = sample_keys | register_keys
+	full_dict = defaultdict(list)
+	full_set = sample_keys | register_keys
 
-		for code in full_set:
-			try:
-				full_dict[code].append(dict_sample[code])
-			except KeyError:
-				full_dict[code].append(['' for x in range(0, 15)])
-			try:
-				full_dict[code].append(dict_register[code])
-			except KeyError:
-				full_dict[code].append(['' for x in range(0, 12)])
+	for code in full_set:
+		try:
+			full_dict[code].append(dict_sample[code])
+		except KeyError:
+			full_dict[code].append(['' for x in range(0, 15)])
+		try:
+			full_dict[code].append(dict_register[code])
+		except KeyError:
+			full_dict[code].append(['' for x in range(0, 12)])
 
-		final_datas = []
-		for key, value in full_dict.items():
-			# 0 nb_lab_journal.get()
-			# print(value)
-			if value[0][0] == value[1][0]:
-				cell0 = value[0][0]
-			elif value[0][0] == '':
-				cell0 = value[1][0]
-			elif value[1][0] == '':
-				cell0 = value[0][0]
-			else:
-				cell0 = value[0][0]
+	final_datas = []
+	for key, value in full_dict.items():
+		# 0 nb_lab_journal.get()
+		# print(value)
+		if value[0][0] == value[1][0]:
+			cell0 = value[0][0]
+		elif value[0][0] == '':
+			cell0 = value[1][0]
+		elif value[1][0] == '':
+			cell0 = value[0][0]
+		else:
+			cell0 = value[0][0]
 
-			# 1 rg_nb_sample.get() s[1] r[1]
-			if value[0][1] == value[1][1]:
+		# 1 rg_nb_sample.get() s[1] r[1]
+		if value[0][1] == value[1][1]:
+			cell1 = value[0][1]
+		elif value[0][1] == '':
+			cell1 = value[1][1]
+		elif value[1][1] == '':
+			cell1 = value[0][1]
+		else:
+			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", value[0][1]):
 				cell1 = value[0][1]
-			elif value[0][1] == '':
+			else:
 				cell1 = value[1][1]
-			elif value[1][1] == '':
-				cell1 = value[0][1]
-			else:
-				if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", value[0][1]):
-					cell1 = value[0][1]
-				else:
-					cell1 = value[1][1]
 
-			# 2 name_sample.get() s[2] r[2]
-			if value[0][2] == value[1][2]:
-				cell2 = value[0][2]
-			elif value[0][2] == '':
-				cell2 = value[1][2]
-			elif value[1][2] == '':
-				cell2 = value[0][2]
-			else:
-				cell2 = value[0][2]
+		# 2 name_sample.get() s[2] r[2]
+		if value[0][2] == value[1][2]:
+			cell2 = value[0][2]
+		elif value[0][2] == '':
+			cell2 = value[1][2]
+		elif value[1][2] == '':
+			cell2 = value[0][2]
+		else:
+			cell2 = value[0][2]
 
-			# 3 nm_sample_executor.get() s[7]
-			cell3 = value[0][7]
+		# 3 nm_sample_executor.get() s[7]
+		cell3 = value[0][7]
 
-			# 4 nt_sample.get() s[14]
-			cell4 = value[0][14]
+		# 4 nt_sample.get() s[14]
+		cell4 = value[0][14]
 
-			# 5 nt_register.get() r[11]
-			cell5 = value[1][11]
+		# 5 nt_register.get() r[11]
+		cell5 = value[1][11]
 
-			# 6 ls_indicators_research s[12]
-			cell6 = value[0][12]
+		# 6 ls_indicators_research s[12]
+		cell6 = value[0][12]
 
-			# 7 det_nd_prep_sample.get() s[3]
-			cell7 = value[0][3]
+		# 7 det_nd_prep_sample.get() s[3]
+		cell7 = value[0][3]
 
-			# 8 det_nd_research.get() s[8]
-			cell8 = value[0][8]
+		# 8 det_nd_research.get() s[8]
+		cell8 = value[0][8]
 
-			# 9 sp_did_research.get() s[13]
-			cell9 = value[0][13]
+		# 9 sp_did_research.get() s[13]
+		cell9 = value[0][13]
 
-			# 10 rsp_executor.get() r[10]
-			cell10 = value[1][10]
+		# 10 rsp_executor.get() r[10]
+		cell10 = value[1][10]
 
-			# 11 dt_st_research.get() s[10] r[5]
-			if value[0][10] == value[1][5]:
-				cell11 = value[0][10]
-			elif value[0][10] == '':
-				cell11 = value[1][5]
-			elif value[1][5] == '':
-				cell11 = value[0][10]
-			else:
-				st_sample_date = value[0][10]
-				st_register_date = value[1][5]
-				try:
-					datetime_st_sample_date = datetime.datetime.strptime(st_sample_date, '%d.%m.%Y')
-				except:
-					pass
-				try:
-					datetime_st_register_date = datetime.datetime.strptime(st_register_date, '%d.%m.%Y')
-				except:
-					pass
-				if datetime_st_sample_date != '' and datetime_st_register_date != '':
-					if datetime_st_sample_date > datetime_st_register_date:
-						cell11 = st_sample_date
-					else:
-						cell11 = st_register_date
-				elif datetime_st_sample_date == '' and datetime_st_register_date != '':
-					cell11 = datetime_st_register_date
-				elif datetime_st_sample_date != '' and datetime_st_register_date == '':
-					cell11 = datetime_st_sample_date
-				else:
-					cell11 = '-'
-
-			# 12 dt_st_sample_prep.get() s[5]
-			cell12 = value[0][5]
-
-			# 13 dt_st_sampling.get() r[3]
-			cell13 = value[1][3]
-
-			# 14 dt_get_receipt.get() r[4]
-			cell14 = value[1][4]
-
-			# 15 dt_fn_research.get() s[11] r[7]
-			if value[0][11] == value[1][7]:
-				cell15 = value[0][11]
-			elif value[0][11] == '':
-				cell15 = value[1][7]
-			elif value[1][7] == '':
-				cell15 = value[0][11]
-			else:
-				fn_sample_date = value[0][11]
-				fn_register_date = value[1][7]
-				datetime_fn_sample_date = ''
-				datetime_fn_register_date = ''
-				try:
-					datetime_fn_sample_date = datetime.datetime.strptime(fn_sample_date, '%d.%m.%Y')
-				except:
-					pass
-				try:
-					datetime_fn_register_date = datetime.datetime.strptime(fn_register_date, '%d.%m.%Y')
-				except:
-					pass
-				if datetime_fn_sample_date != '' and datetime_fn_register_date != '':
-					if datetime_fn_sample_date > datetime_fn_register_date:
-						cell15 = fn_sample_date
-					else:
-						cell15 = fn_register_date
-				elif datetime_fn_sample_date == '' and datetime_fn_register_date != '':
-					cell15 = datetime_fn_register_date
-				elif datetime_fn_sample_date != '' and datetime_fn_register_date == '':
-					cell15 = datetime_fn_sample_date
-				else:
-					cell15 = '-'
-
-			# 16 dt_fn_sample_prep.get() s[6]
-			cell16 = value[0][6]
-
-			# 17 dt_disposal.get() r[8]
-			cell17 = value[1][8]
-
-			# 18 dt_issue_protocol.get() r[9]
-			cell18 = value[1][9]
-
-			# 19 steps_sample.get() s[4]
-			cell19 = value[0][4]
-
-			# 20 stp_research.get() s[9]
-			cell20 = value[0][9]
-
-			to_final_data = [
-				cell0,  # nb_lab_journal.get(), s[0] r[0]
-				cell1,  # rg_nb_sample.get(), s[1] r[1]
-				cell2,  # name_sample.get(), s[2] r[2]
-				cell3,  # nm_sample_executor.get(), s[7]
-				cell4,  # nt_sample.get(), s[14]
-				cell5,  # nt_register.get(), r[11]
-				cell6,  # ls_indicators_research, s[12]
-				cell7,  # det_nd_prep_sample.get(), s[3]
-				cell8,  # det_nd_research.get(), s[8]
-				cell9,  # sp_did_research.get(), s[13]
-				cell10,  # rsp_executor.get(), r[10]
-				cell11,  # dt_st_research.get(), s[10] r[5]
-				cell12,  # dt_st_sample_prep.get(), s[5]
-				cell13,  # dt_st_sampling.get(), r[3]
-				cell14,  # dt_get_receipt.get(), r[4]
-				cell15,  # dt_fn_research.get(), s[11] r[7]
-				cell16,  # dt_fn_sample_prep.get(), s[6]
-				cell17,  # dt_disposal.get(), r[8]
-				cell18,  # dt_issue_protocol.get(), r[9]
-				cell19,  # steps_sample.get(), s[4]
-				cell20,  # stp_research.get(), s[9]
-			]
-			final_datas.append(to_final_data)
-
-		final_datas.sort(key=lambda x: x[0])
-		if load:
-			with open('datas/query_history.csv', 'a', encoding='utf-8', newline='') as f:
-				for row in final_datas:
-					writer = csv.writer(f, delimiter='&')
-					writer.writerow(row)
-				f.close()
-		if load == False:
-			return final_datas
-
-	def add_only_new_position():
-		book_1 = op.load_workbook(filename='docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx')
-		sheet_1 = book_1.active
-
-		book_2 = op.load_workbook(filename='docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx')
-		sheet_2 = book_2.active
-
-		raw_data_sample = []
-		for i, row in enumerate(sheet_1.iter_rows(min_row=5, values_only=True)):
-			formatted_row = []
-			row = list(row)
-			if str(row[0]).isdigit():
-				row = row[0:15]
-				for index in (5, 6, 10, 11):
-					try:
-						row[index] = row[index].strftime('%d.%m.%Y')
-					except:
-						pass
-				for string in row:
-					try:
-						string = string.replace('\n', ' ')
-					except (TypeError, AttributeError):
-						pass
-					try:
-						formatted_row.append(string.strip())
-					except:
-						formatted_row.append(string)
-				raw_data_sample.append(formatted_row)
-
-		raw_data_register = []
-		for i, row in enumerate(sheet_2.iter_rows(min_row=5, values_only=True)):
-			formatted_row = []
-			row = list(row)
-			if str(row[0]).isdigit():
-				row = row[0:12]
-				for index in (3, 4, 5, 7, 8, 9):
-					try:
-						row[index] = row[index].strftime('%d.%m.%Y')
-					except:
-						pass
-				for string in row:
-					try:
-						formatted_row.append(string.strip())
-					except:
-						formatted_row.append(string)
-				raw_data_register.append(formatted_row)
-
-		dict_sample = {}
-		dict_register = {}
-		for row in raw_data_sample:
-			dict_key = 'неизвестный номер'
-			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
-				dict_key = row[1]
-			else:
-				for row_register in raw_data_register:
-					if row[0] == row_register[0]:
-						dict_key = row_register[1]
-			dict_values = row
-			dict_sample[dict_key] = dict_values
-		for row in raw_data_register:
-			dict_key = 'неизвестный номер'
-			if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", row[1]):
-				dict_key = row[1]
-			else:
-				for row_sample in raw_data_sample:
-					if row[0] == row_sample[0]:
-						dict_key = row_sample[1]
-			dict_values = row
-			dict_register[dict_key] = dict_values
-
-		sample_keys = set(dict_sample.keys())
-		register_keys = set(dict_register.keys())
-
-		full_dict = defaultdict(list)
-		full_set = sample_keys | register_keys
-		query_history_set = set(dict_from_csv().keys())
-		full_new_set = full_set - query_history_set  ### какие были загружены
-
-		for code in full_new_set:
+		# 11 dt_st_research.get() s[10] r[5]
+		if value[0][10] == value[1][5]:
+			cell11 = value[0][10]
+		elif value[0][10] == '':
+			cell11 = value[1][5]
+		elif value[1][5] == '':
+			cell11 = value[0][10]
+		else:
+			st_sample_date = value[0][10]
+			st_register_date = value[1][5]
 			try:
-				full_dict[code].append(dict_sample[code])
-			except KeyError:
-				full_dict[code].append(['' for x in range(0, 15)])
+				datetime_st_sample_date = datetime.datetime.strptime(st_sample_date, '%d.%m.%Y')
+			except:
+				pass
 			try:
-				full_dict[code].append(dict_register[code])
-			except KeyError:
-				full_dict[code].append(['' for x in range(0, 12)])
-
-		final_datas = []
-		for key, value in full_dict.items():
-			# 0 nb_lab_journal.get()
-			if value[0][0] == value[1][0]:
-				cell0 = value[0][0]
-			elif value[0][0] == '':
-				cell0 = value[1][0]
-			elif value[1][0] == '':
-				cell0 = value[0][0]
-			else:
-				cell0 = value[0][0]
-
-			# 1 rg_nb_sample.get() s[1] r[1]
-			if value[0][1] == value[1][1]:
-				cell1 = value[0][1]
-			elif value[0][1] == '':
-				cell1 = value[1][1]
-			elif value[1][1] == '':
-				cell1 = value[0][1]
-			else:
-				if re.fullmatch(f"{r'^(.*)-(.*)-(.*)'}", value[0][1]):
-					cell1 = value[0][1]
+				datetime_st_register_date = datetime.datetime.strptime(st_register_date, '%d.%m.%Y')
+			except:
+				pass
+			if datetime_st_sample_date != '' and datetime_st_register_date != '':
+				if datetime_st_sample_date > datetime_st_register_date:
+					cell11 = st_sample_date
 				else:
-					cell1 = value[1][1]
-
-			# 2 name_sample.get() s[2] r[2]
-			if value[0][2] == value[1][2]:
-				cell2 = value[0][2]
-			elif value[0][2] == '':
-				cell2 = value[1][2]
-			elif value[1][2] == '':
-				cell2 = value[0][2]
+					cell11 = st_register_date
+			elif datetime_st_sample_date == '' and datetime_st_register_date != '':
+				cell11 = datetime_st_register_date
+			elif datetime_st_sample_date != '' and datetime_st_register_date == '':
+				cell11 = datetime_st_sample_date
 			else:
-				cell2 = value[0][2]
+				cell11 = '-'
 
-			# 3 nm_sample_executor.get() s[7]
-			cell3 = value[0][7]
+		# 12 dt_st_sample_prep.get() s[5]
+		cell12 = value[0][5]
 
-			# 4 nt_sample.get() s[14]
-			cell4 = value[0][14]
+		# 13 dt_st_sampling.get() r[3]
+		cell13 = value[1][3]
 
-			# 5 nt_register.get() r[11]
-			cell5 = value[1][11]
+		# 14 dt_get_receipt.get() r[4]
+		cell14 = value[1][4]
 
-			# 6 ls_indicators_research s[12]
-			cell6 = value[0][12]
-
-			# 7 det_nd_prep_sample.get() s[3]
-			cell7 = value[0][3]
-
-			# 8 det_nd_research.get() s[8]
-			cell8 = value[0][8]
-
-			# 9 sp_did_research.get() s[13]
-			cell9 = value[0][13]
-
-			# 10 rsp_executor.get() r[10]
-			cell10 = value[1][10]
-
-			# 11 dt_st_research.get() s[10] r[5]
-			if value[0][10] == value[1][5]:
-				cell11 = value[0][10]
-			elif value[0][10] == '':
-				cell11 = value[1][5]
-			elif value[1][5] == '':
-				cell11 = value[0][10]
-			else:
-				st_sample_date = value[0][10]
-				st_register_date = value[1][5]
-				datetime_st_sample_date = ''
-				datetime_st_register_date = ''
-				try:
-					datetime_st_sample_date = datetime.datetime.strptime(st_sample_date, '%d.%m.%Y')
-				except:
-					pass
-				try:
-					datetime_st_register_date = datetime.datetime.strptime(st_register_date, '%d.%m.%Y')
-				except:
-					pass
-				if datetime_st_sample_date != '' and datetime_st_register_date != '':
-					if datetime_st_sample_date > datetime_st_register_date:
-						cell11 = st_sample_date
-					else:
-						cell11 = st_register_date
-				elif datetime_st_sample_date == '' and datetime_st_register_date != '':
-					cell11 = datetime_st_register_date
-				elif datetime_st_sample_date != '' and datetime_st_register_date == '':
-					cell11 = datetime_st_sample_date
-				else:
-					cell11 = '-'
-
-			# 12 dt_st_sample_prep.get() s[5]
-			cell12 = value[0][5]
-
-			# 13 dt_st_sampling.get() r[3]
-			cell13 = value[1][3]
-
-			# 14 dt_get_receipt.get() r[4]
-			cell14 = value[1][4]
-
-			# 15 dt_fn_research.get() s[11] r[7]
-			if value[0][11] == value[1][7]:
-				cell15 = value[0][11]
-			elif value[0][11] == '':
-				cell15 = value[1][7]
-			elif value[1][7] == '':
-				cell15 = value[0][11]
-			else:
-				fn_sample_date = value[0][11]
-				fn_register_date = value[1][7]
-				datetime_fn_sample_date = ''
-				datetime_fn_register_date = ''
-				try:
-					datetime_fn_sample_date = datetime.datetime.strptime(fn_sample_date, '%d.%m.%Y')
-				except:
-					pass
-				try:
-					datetime_fn_register_date = datetime.datetime.strptime(fn_register_date, '%d.%m.%Y')
-				except:
-					pass
-				if datetime_fn_sample_date != '' and datetime_fn_register_date != '':
-					if datetime_fn_sample_date > datetime_fn_register_date:
-						cell15 = fn_sample_date
-					else:
-						cell15 = fn_register_date
-				elif datetime_fn_sample_date == '' and datetime_fn_register_date != '':
-					cell15 = datetime_fn_register_date
-				elif datetime_fn_sample_date != '' and datetime_fn_register_date == '':
-					cell15 = datetime_fn_sample_date
-				else:
-					cell15 = '-'
-
-			# 16 dt_fn_sample_prep.get() s[6]
-			cell16 = value[0][6]
-
-			# 17 dt_disposal.get() r[8]
-			cell17 = value[1][8]
-
-			# 18 dt_issue_protocol.get() r[9]
-			cell18 = value[1][9]
-
-			# 19 steps_sample.get() s[4]
-			cell19 = value[0][4]
-
-			# 20 stp_research.get() s[9]
-			cell20 = value[0][9]
-
-			to_final_data = [
-				cell0,  # nb_lab_journal.get(), s[0] r[0]
-				cell1,  # rg_nb_sample.get(), s[1] r[1]
-				cell2,  # name_sample.get(), s[2] r[2]
-				cell3,  # nm_sample_executor.get(), s[7]
-				cell4,  # nt_sample.get(), s[14]
-				cell5,  # nt_register.get(), r[11]
-				cell6,  # ls_indicators_research, s[12]
-				cell7,  # det_nd_prep_sample.get(), s[3]
-				cell8,  # det_nd_research.get(), s[8]
-				cell9,  # sp_did_research.get(), s[13]
-				cell10,  # rsp_executor.get(), r[10]
-				cell11,  # dt_st_research.get(), s[10] r[5]
-				cell12,  # dt_st_sample_prep.get(), s[5]
-				cell13,  # dt_st_sampling.get(), r[3]
-				cell14,  # dt_get_receipt.get(), r[4]
-				cell15,  # dt_fn_research.get(), s[11] r[7]
-				cell16,  # dt_fn_sample_prep.get(), s[6]
-				cell17,  # dt_disposal.get(), r[8]
-				cell18,  # dt_issue_protocol.get(), r[9]
-				cell19,  # steps_sample.get(), s[4]
-				cell20,  # stp_research.get(), s[9]
-			]
-			final_datas.append(to_final_data)
-
-		final_datas.sort(key=lambda x: x[0])
-
-	def refresh_changes():
-
-		infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы',
-		                     'Наименование пробы(образца)',
-		                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
-		                     'Примечания регистрационного журнала', 'Перечень показателей через запятую',
-		                     'Реквизиты НД для проведения пробоподготовки',
-		                     'Реквизиты НД на метод исследования', 'ФИО специалиста проводившего исследование',
-		                     'ФИО ответственного исполнителя', 'Дата начала исследования',
-		                     'Дата начала пробоподготовки',
-		                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
-		                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
-		                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
-
-		def choose_changes(evt):
-			t0['state'] = tk.NORMAL
-			t0.delete(0.0, tk.END)
-			w = evt.widget
-			value = w.get(int(w.curselection()[0]))
-
+		# 15 dt_fn_research.get() s[11] r[7]
+		if value[0][11] == value[1][7]:
+			cell15 = value[0][11]
+		elif value[0][11] == '':
+			cell15 = value[1][7]
+		elif value[1][7] == '':
+			cell15 = value[0][11]
+		else:
+			fn_sample_date = value[0][11]
+			fn_register_date = value[1][7]
+			datetime_fn_sample_date = ''
+			datetime_fn_register_date = ''
 			try:
-				for i, row in enumerate(query_history_dict_checker_from_csv[value]):
-					if value in query_history_dict:
-						if query_history_dict_checker_from_csv[value][i] != query_history_dict[value][i]:
-							t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'before')
-						else:
-							t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
-					else:
+				datetime_fn_sample_date = datetime.datetime.strptime(fn_sample_date, '%d.%m.%Y')
+			except:
+				pass
+			try:
+				datetime_fn_register_date = datetime.datetime.strptime(fn_register_date, '%d.%m.%Y')
+			except:
+				pass
+			if datetime_fn_sample_date != '' and datetime_fn_register_date != '':
+				if datetime_fn_sample_date > datetime_fn_register_date:
+					cell15 = fn_sample_date
+				else:
+					cell15 = fn_register_date
+			elif datetime_fn_sample_date == '' and datetime_fn_register_date != '':
+				cell15 = datetime_fn_register_date
+			elif datetime_fn_sample_date != '' and datetime_fn_register_date == '':
+				cell15 = datetime_fn_sample_date
+			else:
+				cell15 = '-'
+
+		# 16 dt_fn_sample_prep.get() s[6]
+		cell16 = value[0][6]
+
+		# 17 dt_disposal.get() r[8]
+		cell17 = value[1][8]
+
+		# 18 dt_issue_protocol.get() r[9]
+		cell18 = value[1][9]
+
+		# 19 steps_sample.get() s[4]
+		cell19 = value[0][4]
+
+		# 20 stp_research.get() s[9]
+		cell20 = value[0][9]
+
+		to_final_data = [
+			cell0,  # nb_lab_journal.get(), s[0] r[0]
+			cell1,  # rg_nb_sample.get(), s[1] r[1]
+			cell2,  # name_sample.get(), s[2] r[2]
+			cell3,  # nm_sample_executor.get(), s[7]
+			cell4,  # nt_sample.get(), s[14]
+			cell5,  # nt_register.get(), r[11]
+			cell6,  # ls_indicators_research, s[12]
+			cell7,  # det_nd_prep_sample.get(), s[3]
+			cell8,  # det_nd_research.get(), s[8]
+			cell9,  # sp_did_research.get(), s[13]
+			cell10,  # rsp_executor.get(), r[10]
+			cell11,  # dt_st_research.get(), s[10] r[5]
+			cell12,  # dt_st_sample_prep.get(), s[5]
+			cell13,  # dt_st_sampling.get(), r[3]
+			cell14,  # dt_get_receipt.get(), r[4]
+			cell15,  # dt_fn_research.get(), s[11] r[7]
+			cell16,  # dt_fn_sample_prep.get(), s[6]
+			cell17,  # dt_disposal.get(), r[8]
+			cell18,  # dt_issue_protocol.get(), r[9]
+			cell19,  # steps_sample.get(), s[4]
+			cell20,  # stp_research.get(), s[9]
+		]
+		final_datas.append(to_final_data)
+
+	final_datas.sort(key=lambda x: x[0])
+	if load:
+		with open('datas/query_history.csv', 'a', encoding='utf-8', newline='') as f:
+			for row in final_datas:
+				writer = csv.writer(f, delimiter='&')
+				writer.writerow(row)
+			f.close()
+	if load == False:
+		return final_datas
+
+def refresh_changes():
+
+	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы',
+	                     'Наименование пробы(образца)',
+	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
+	                     'Примечания регистрационного журнала', 'Перечень показателей через запятую',
+	                     'Реквизиты НД для проведения пробоподготовки',
+	                     'Реквизиты НД на метод исследования', 'ФИО специалиста проводившего исследование',
+	                     'ФИО ответственного исполнителя', 'Дата начала исследования',
+	                     'Дата начала пробоподготовки',
+	                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
+	                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
+	                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
+
+	def choose_changes(evt):
+		t0['state'] = tk.NORMAL
+		t0.delete(0.0, tk.END)
+		w = evt.widget
+		value = w.get(int(w.curselection()[0]))
+
+		try:
+			for i, row in enumerate(query_history_dict_checker_from_csv[value]):
+				if value in query_history_dict:
+					if query_history_dict_checker_from_csv[value][i] != query_history_dict[value][i]:
 						t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'before')
-			except KeyError:
-				t0.insert(tk.INSERT, 'Запись будет добавлена в базу')
-				status = 'добавление'
-			t0['state'] = tk.DISABLED
-
-			t1['state'] = tk.NORMAL
-			t1.delete(0.0, tk.END)
-
-			try:
-				for i, row in enumerate(query_history_dict[value]):
-					if value in query_history_dict_checker_from_csv:
-						if query_history_dict[value][i] != query_history_dict_checker_from_csv[value][i]:
-							t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'after')
-							status = 'изменения'
-						else:
-							t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
 					else:
+						t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+				else:
+					t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'before')
+		except KeyError:
+			t0.insert(tk.INSERT, 'Запись будет добавлена в базу')
+			status = 'добавление'
+		t0['state'] = tk.DISABLED
+
+		t1['state'] = tk.NORMAL
+		t1.delete(0.0, tk.END)
+
+		try:
+			for i, row in enumerate(query_history_dict[value]):
+				if value in query_history_dict_checker_from_csv:
+					if query_history_dict[value][i] != query_history_dict_checker_from_csv[value][i]:
 						t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'after')
-			except KeyError:
-				t1.insert(tk.INSERT, 'Запись будет удалена из базы')
-				status = 'удаление'
-			t1['state'] = tk.DISABLED
+						status = 'изменения'
+					else:
+						t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+				else:
+					t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'after')
+		except KeyError:
+			t1.insert(tk.INSERT, 'Запись будет удалена из базы')
+			status = 'удаление'
+		t1['state'] = tk.DISABLED
 
-		def confirm_all_changes():
-			write_history(query_history_dict.values(), type_record='w')
-			messagebox.showinfo('Инфо', f'было принято {counter_of_changes} изменений', parent=window_for_refresh_base)
+	def too_much_changes():
+		messagebox.showerror('Инфо', 'Слишком много изменений для выбора. Воспользуйтесь кнопкой "Принять все изменения", чтобы принять все изменения.')
 
-		def save_checkbox_to_csv():
-			pass
+	def confirm_all_changes():
+		write_history(query_history_dict.values(), type_record='w')
+		messagebox.showinfo('Инфо', f'Было принято {counter_of_changes} изменений', parent=refresh_changes_window)
 
-		def choose_changes_checkbox_menu():
-			window_for_choose_checkbox = tk.Toplevel(refresh_changes_window)  # нельзя нажимать в других окнах
-			window_for_choose_checkbox.title('Окно 3 чекбоксы')
-			window_for_choose_checkbox.geometry(f'{int(600.0 * scaling)}x{int(525.0 * scaling)}+1000+350')
-			window_for_choose_checkbox.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+	def save_checkbox_to_csv():
+		pass
 
-			def on_mousewheel(event):
+	def choose_changes_checkbox_menu():
+		window_for_choose_checkbox = tk.Toplevel(refresh_changes_window)  # нельзя нажимать в других окнах
+		window_for_choose_checkbox.title('Окно 2 чекбоксы')
+		window_for_choose_checkbox.geometry(f'{int(600.0 * scaling)}x{int(525.0 * scaling)}+1000+350')
+		window_for_choose_checkbox.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
+		def on_mousewheel(event):
+			if isinstance(event.widget, tk.Checkbutton):
 				scroll = -1 if event.delta > 0 else 1
 				my_canvas.yview_scroll(scroll, 'units')
 
-			# Create a main frame
-			main_frame = tk.Frame(window_for_choose_checkbox)
-			main_frame.pack(fill=tk.BOTH, expand=1)
+		def on_mousewheel_regular(event):
+			scroll = -1 if event.delta > 0 else 1
+			my_canvas.yview_scroll(scroll, 'units')
 
-			# Create a canvas
-			my_canvas = tk.Canvas(main_frame)
-			my_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+		# Create a main frame
+		main_frame = tk.Frame(window_for_choose_checkbox)
+		main_frame.pack(fill=tk.BOTH, expand=1)
 
-			# Add a scrollbar to the canvas
-			my_scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=my_canvas.yview)
-			my_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+		# Create a canvas
+		my_canvas = tk.Canvas(main_frame)
+		my_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
-			# Configure the canvas
-			my_canvas.configure(yscrollcommand=my_scrollbar.set)
-			my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion = my_canvas.bbox('all')))
+		# Add a scrollbar to the canvas
+		my_scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=my_canvas.yview)
+		my_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-			# Create ANOTHER frame INSIDE the canvas
-			second_frame = tk.Frame(my_canvas)
+		# Configure the canvas
+		my_canvas.configure(yscrollcommand=my_scrollbar.set)
+		my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion=my_canvas.bbox('all')))
 
-			# Add that new frame to a window in the canvas
-			my_canvas.create_window((0,0), window=second_frame, anchor='nw')
+		# Create ANOTHER frame INSIDE the canvas
+		second_frame = tk.Frame(my_canvas)
 
+		# Add that new frame to a window in the canvas
+		my_canvas.create_window((0, 0), window=second_frame, anchor='nw')
 
-			dict_for_changes_save = {}
+		dict_for_changes_save = {}
 
-			def confirm_changes_checkbox_menu():
+		def confirm_changes_checkbox_menu():
+			write_history(query_history_dict.values(), type_record='w')
+
+		def set_checkbox_on(index):
+			if checkbox_variable_dict['checkbox_code_var_' + str(index)].get() == 'No':
+				dict_for_changes_save[query_history_changes[index]] = 'No'
+			if checkbox_variable_dict['checkbox_code_var_' + str(index)].get() == 'Yes':
+				dict_for_changes_save[query_history_changes[index]] = 'Yes'
+
+		def save_checkboxes_to_base():
+			for key in dict_for_changes_save.keys():
+				if dict_for_changes_save[key] == 'No':
+					try:
+						query_history_dict[key] = query_history_dict_checker_from_csv[key]
+					except KeyError:
+						del query_history_dict[key]
+			counter_of_changes_to_save = [x for x in dict_for_changes_save.values() if x == 'Yes']
+			askorcancel_save_checkboxes_to_base = messagebox.askokcancel('title',
+			                                                             'Вы действительно хотите принять измения?',
+			                                                             parent=window_for_choose_checkbox)
+			if askorcancel_save_checkboxes_to_base == True:
 				write_history(query_history_dict.values(), type_record='w')
-			def set_checkbox_on(index):
-				if checkbox_variable_dict['checkbox_code_var_' + str(index)].get() == 'No':
-					dict_for_changes_save[query_history_changes[index]] = 'No'
-				if checkbox_variable_dict['checkbox_code_var_' + str(index)].get() == 'Yes':
-					dict_for_changes_save[query_history_changes[index]] = 'Yes'
+				messagebox.showinfo('Инфо', f'Принято для {len(counter_of_changes_to_save)} изменений',
+				                    parent=window_for_choose_checkbox)
+				window_for_choose_checkbox.destroy()
+				refresh_changes_window.destroy()
 
-			def save_checkboxes_to_base():
-				for key in dict_for_changes_save.keys():
-					if dict_for_changes_save[key] == 'No':
-						try:
-							query_history_dict[key] = query_history_dict_checker_from_csv[key]
-						except KeyError:
-							del query_history_dict[key]
-				counter_of_changes_to_save = [x for x in dict_for_changes_save.values() if x == 'Yes']
-				askorcancel_save_checkboxes_to_base = messagebox.askokcancel('title', 'Вы действительно хотите принять измения?', parent=window_for_choose_checkbox)
-				if askorcancel_save_checkboxes_to_base == True:
-					write_history(query_history_dict.values(), type_record='w')
-					messagebox.showinfo('Инфо', f'Принято для {len(counter_of_changes_to_save)} изменений', parent=window_for_choose_checkbox)
-					window_for_choose_checkbox.destroy()
-					refresh_changes_window.destroy()
-					window_for_refresh_base.destroy()
+		def func_for_pass():
+			pass
 
-			def func_for_pass():
-				pass
-			index_for_column = 0
-			index_for_row = 1
-			checkbox_variable_dict = {}
-			x = len(query_history_changes)
-			if x <= 150:
-				my_canvas.unbind('<MouseWheel>')
-				my_canvas.configure(yscrollcommand=None)
-			x_rows = 25
-			if x > 150:
-				if x % 6 == 0:
-					x_rows = int(x/6)
-				else:
-					x_rows = int(x/6)+1
-			for i, code in enumerate(query_history_changes):
-				if i != 0 and  i % x_rows == 0:
-					index_for_row = 1
-					index_for_column += 1
-				checkbox_variable_dict['checkbox_code_var_' + str(i)] = tk.StringVar()
-				checkbox_variable_dict['checkbox_code_var_' + str(i)].set('Yes')
-				dict_for_changes_save[query_history_changes[i]] = 'Yes'
-				checkbox_variable_dict['checkbox_code' + str(i)] = tk.Checkbutton(
-					second_frame, text=f'{code}', variable=checkbox_variable_dict['checkbox_code_var_' + str(i)], command=lambda index=i: set_checkbox_on(index), offvalue='No', onvalue='Yes')
-				checkbox_variable_dict['checkbox_code' + str(i)].grid(row=index_for_row, column=index_for_column, stick='w')
-				index_for_row += 1
-
-
-			tk.Button(second_frame, text='Сохранить в базу', command=save_checkboxes_to_base).grid(
-				row=0, column=0, stick='w')
-		def close_refresh_changes_window():
-			refresh_changes_window.destroy()
-
-		query_history_dict = dict_from_csv()
-		query_history_dict_checker_from_csv = query_history_dict.copy()
-
-		dict_from_excel = {}
-		for row in add_all_datas(load=False):
-			dict_key = row[1]
-			row[0] = str(row[0])
-			dict_values = ['' if v is None else v for v in row]
-			dict_from_excel[dict_key] = dict_values
-
-		dict_from_excel_codes = dict_from_excel.keys()
-		counter_of_changes = 0
-		query_history_changes = []
-		for code in dict_from_excel_codes:
-			try:
-				str_1 = ('&').join(dict_from_excel[code])
-				try:
-					str_2 = ('&').join(query_history_dict[code])
-				except KeyError:
-					str_2 = None
-				if str_1 != str_2:
-					query_history_dict[code] = dict_from_excel[code]
-					query_history_changes.append(code)
-					counter_of_changes += 1
-			except TypeError:
-				pass
-
-		query_history_dict_keys = list(query_history_dict.keys())
-		for key in query_history_dict_keys:
-			if key in dict_from_excel_codes:
-				pass
-			else:
-				del query_history_dict[key]
-				query_history_changes.append(key)
-				counter_of_changes += 1
-		if counter_of_changes == 0:
-			messagebox.showinfo('готово', 'Изменений нет', parent=window_for_refresh_base)
+		index_for_column = 0
+		index_for_row = 1
+		checkbox_variable_dict = {}
+		x = len(query_history_changes)
+		if x <= 150:
+			my_canvas.configure(yscrollcommand=None)
 		else:
-			refresh_changes_window = tk.Toplevel(window_for_refresh_base)
-			refresh_changes_window.title('Окно 2 меню изменений')
-			refresh_changes_window.geometry(f'{int(1200.0 * scaling)}x{int(500.0 * scaling)}+1200+400')
-			refresh_changes_window.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+			my_canvas.bind_all('<MouseWheel>', on_mousewheel)
+			my_canvas.bind('<MouseWheel>', on_mousewheel_regular)
+		x_rows = 25
+		if x > 150:
+			if x % 6 == 0:
+				x_rows = int(x / 6)
+			else:
+				x_rows = int(x / 6) + 1
+		for i, code in enumerate(query_history_changes):
+			if i != 0 and i % x_rows == 0:
+				index_for_row = 1
+				index_for_column += 1
+			checkbox_variable_dict['checkbox_code_var_' + str(i)] = tk.StringVar()
+			checkbox_variable_dict['checkbox_code_var_' + str(i)].set('Yes')
+			dict_for_changes_save[query_history_changes[i]] = 'Yes'
+			checkbox_variable_dict['checkbox_code' + str(i)] = tk.Checkbutton(
+				second_frame, text=f'{code}', variable=checkbox_variable_dict['checkbox_code_var_' + str(i)],
+				command=lambda index=i: set_checkbox_on(index), offvalue='No', onvalue='Yes')
+			checkbox_variable_dict['checkbox_code' + str(i)].grid(row=index_for_row, column=index_for_column,
+			                                                      stick='w')
+			index_for_row += 1
 
-			list_var_changes = tk.Variable(value=query_history_changes)
-			l0 = tk.Listbox(refresh_changes_window, listvariable=list_var_changes,
-			                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
-			l0.grid(row=0, column=0, stick='e')
-			l0.bind('<<ListboxSelect>>', choose_changes)
+		def uncheckbox_all():
+			for i, key in enumerate(dict_for_changes_save):
+				checkbox_variable_dict['checkbox_code_var_' + str(i)].set('No')
+				dict_for_changes_save[key] = 'No'
 
-			t0 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
-			t0.tag_configure("before", foreground="red", background='#FFFFDA')
-			t0.grid(row=0, column=1, padx=5)
+		tk.Button(second_frame, text='Сохранить в базу', command=save_checkboxes_to_base).grid(
+			row=0, column=0, stick='w')
+		tk.Button(second_frame, text='Снять все галочки', command=uncheckbox_all).grid(
+			row=0, column=2, stick='w')
 
-			t1 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
-			t1.tag_configure("after", foreground="green", background='#FFFFDA')
-			t1.grid(row=0, column=2, padx=5)
+	def close_refresh_changes_window():
+		refresh_changes_window.destroy()
 
-			tk.Button(refresh_changes_window, text='Отменить изменения', command=close_refresh_changes_window).grid(
-				row=1, column=0, stick='w')
+	query_history_dict = dict_from_csv()
+	query_history_dict_checker_from_csv = query_history_dict.copy()
 
+	dict_from_excel = {}
+	for row in add_all_datas(load=False):
+		dict_key = row[1]
+		row[0] = str(row[0])
+		dict_values = ['' if v is None else v for v in row]
+		dict_from_excel[dict_key] = dict_values
+
+	dict_from_excel_codes = dict_from_excel.keys()
+	counter_of_changes = 0
+	query_history_changes = []
+	for code in dict_from_excel_codes:
+		try:
+			str_1 = ('&').join(dict_from_excel[code])
+			try:
+				str_2 = ('&').join(query_history_dict[code])
+			except KeyError:
+				str_2 = None
+			if str_1 != str_2:
+				query_history_dict[code] = dict_from_excel[code]
+				query_history_changes.append(code)
+				counter_of_changes += 1
+		except TypeError:
+			pass
+
+	query_history_dict_keys = list(query_history_dict.keys())
+	for key in query_history_dict_keys:
+		if key in dict_from_excel_codes:
+			pass
+		else:
+			del query_history_dict[key]
+			query_history_changes.append(key)
+			counter_of_changes += 1
+	if counter_of_changes == 0:
+		messagebox.showinfo('готово', 'Изменений нет', parent=win)
+	else:
+		refresh_changes_window = tk.Toplevel(win)
+		refresh_changes_window.title('1 меню изменений')
+		refresh_changes_window.geometry(f'{int(1200.0 * scaling)}x{int(500.0 * scaling)}+1200+400')
+		refresh_changes_window.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
+		list_var_changes = tk.Variable(value=query_history_changes)
+		l0 = tk.Listbox(refresh_changes_window, listvariable=list_var_changes,
+		                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+		l0.grid(row=0, column=0, stick='e')
+		l0.bind('<<ListboxSelect>>', choose_changes)
+
+		t0 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+		t0.tag_configure("before", foreground="red", background='#FFFFDA')
+		t0.grid(row=0, column=1, padx=5)
+
+		t1 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+		t1.tag_configure("after", foreground="green", background='#FFFFDA')
+		t1.grid(row=0, column=2, padx=5)
+
+		tk.Button(refresh_changes_window, text='Отменить изменения', command=close_refresh_changes_window).grid(
+			row=1, column=0, stick='w')
+
+		if len(query_history_changes) <= 600:
 			tk.Button(refresh_changes_window, text='Выбрать изменения', command=choose_changes_checkbox_menu).grid(
 				row=1, column=1, stick='w')
+		else:
+			tk.Button(refresh_changes_window, text='Выбрать изменения', command=too_much_changes).grid(
+				row=1, column=1, stick='w')
 
-			tk.Button(refresh_changes_window, text='Принять все изменения', command=confirm_all_changes).grid(
-				row=1, column=2, stick='w')
-
-	####################################НАЧАЛО ФУНКЦИИ
-	window_for_refresh_base = tk.Toplevel(win)  # нельзя нажимать в других окнах
-	window_for_refresh_base.title('Окно 1 база')
-	window_for_refresh_base.geometry(f'{int(600.0 * scaling)}x{int(500.0 * scaling)}+1000+350')
-	window_for_refresh_base.protocol('WM_DELETE_WINDOW')  # закрытие приложения
-	tk.Button(window_for_refresh_base, text='Загрузить все в базу', command=add_all_datas).grid(row=0, column=0,
-	                                                                                            stick='w')
-	tk.Button(window_for_refresh_base, text='Загрузить только новые номера', command=add_only_new_position).grid(
-		row=0,
-		column=1,
-		stick='w')
-	tk.Button(window_for_refresh_base, text='Обновить все изменения из excel', command=refresh_changes).grid(row=0,
-	                                                                                                         column=2,
-	                                                                                                         stick='w')
+		tk.Button(refresh_changes_window, text='Принять все изменения', command=confirm_all_changes).grid(
+			row=1, column=2, stick='w')
 
 
 # двойное
@@ -1904,8 +1652,8 @@ tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=ex
                                                                                       pady=10)
 tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=start_window_for_word).grid(
 	row=100, column=1, stick='e', pady=10)
-tk.Button(win, text='Добавить в историю из excel', command=refresh_base_from_excel).grid(row=100, column=4,
-                                                                                         stick='w')
+tk.Button(win, text='Добавить в историю из excel', command=refresh_changes).grid(row=100, column=4,
+                                                                                 stick='w')
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
                      ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
