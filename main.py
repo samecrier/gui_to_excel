@@ -678,8 +678,15 @@ def word_func(dict_for_word):
 	dict_first_item = next(iter(dict_for_word.values()))
 	executor = dict_first_item[9]
 	sample_name = dict_first_item[1]
-	sample_name = sample_name.split('-')[:-1]
-	sample_name = ('-').join(sample_name)
+	try:
+		sample_name_code = sample_name.split('-')
+		if len(sample_name_code) > 3:
+			print(sample_name_code)
+			sample_name_code = ('-').join(sample_name_code[:-1])
+		else:
+			sample_name_code = sample_name
+	except:
+		sample_name_code = sample_name
 
 	indicator_names = dict_first_item[6]
 	if ' не обнаружены' in indicator_names:
@@ -689,11 +696,14 @@ def word_func(dict_for_word):
 	indicator_names = indicator_names.split(', ')
 	nd_dict = {}
 	for name in indicator_names:
-		nd_dict[name] = refactor_nd_codes[name]
+		try:
+			nd_dict[name] = refactor_nd_codes[name]
+		except KeyError:
+			nd_dict[name] = 'нужен код'
 
 	indexes_nd_samples = len(dict_for_word)
 	list_samples = len(indicator_names)
-
+	print(indexes_nd_samples, list_samples)
 	doc = docx.Document('docs/template.docx')
 
 	def add_block():
@@ -756,7 +766,7 @@ def word_func(dict_for_word):
 		make_head()
 		i = 1
 		for key, value in dict_for_word.items():
-			sample_fullname = f'{value[1]} / {value[2]}'
+			sample_fullname = f'{value[1]} / {value[2].capitalize()}'
 			indicator_name = value[6]
 			if ' не обнаружены' in indicator_name:
 				indicator_result = 'Не обнаружено'
@@ -822,7 +832,7 @@ def word_func(dict_for_word):
 	             dt_fn_research=dict_first_item[15])
 
 	print('Word файл сгенерирован')
-	doc.save(f'docs/{sample_name}.docx')
+	doc.save(f'docs/{sample_name_code}.docx')
 
 
 def start_window_for_word():
@@ -838,6 +848,9 @@ def start_window_for_word():
 		d0_new = dict(sorted(d0.items()))
 		d0 = list(d0_new.values())
 		dict_for_word = dict(sorted(dict_for_word.items(), key=lambda pair: d0.index(pair[0])))
+		if len(dict_for_word) == 0:
+			dict_for_word[value] = data_set_dict[value]
+		print(dict_for_word)
 		word_func(dict_for_word)
 
 	def show_codes(evt):
@@ -868,10 +881,8 @@ def start_window_for_word():
 		except:
 			code = i
 		dict_for_data_set[code].append(i)
-	print(dict_for_data_set)
 	for key in dict_for_data_set.keys():
 		if len(dict_for_data_set[key]) > 1:
-			print(dict_for_data_set[key])
 			dict_for_data_set[key] = sorted(dict_for_data_set[key], key=lambda y: int(y.split('-')[-1]))
 
 	sample_codes = [key for key in dict_for_data_set]
@@ -1154,8 +1165,8 @@ def add_all_datas(load=True):
 	if load == False:
 		return final_datas
 
-def refresh_changes():
 
+def refresh_changes():
 	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы',
 	                     'Наименование пробы(образца)',
 	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
@@ -1207,7 +1218,8 @@ def refresh_changes():
 		t1['state'] = tk.DISABLED
 
 	def too_much_changes():
-		messagebox.showerror('Инфо', 'Слишком много изменений для выбора. Воспользуйтесь кнопкой "Принять все изменения", чтобы принять все изменения.')
+		messagebox.showerror('Инфо',
+		                     'Слишком много изменений для выбора. Воспользуйтесь кнопкой "Принять все изменения", чтобы принять все изменения.')
 
 	def confirm_all_changes():
 		write_history(query_history_dict.values(), type_record='w')
