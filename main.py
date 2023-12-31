@@ -1430,27 +1430,146 @@ def refresh_base_from_excel():
 		                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
 		                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
 		                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
+
 		def choose_changes(evt):
 			t0['state'] = tk.NORMAL
 			t0.delete(0.0, tk.END)
 			w = evt.widget
 			value = w.get(int(w.curselection()[0]))
-			for i, row in enumerate(query_history_dict_checker[value]):
-				t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+
+			try:
+				for i, row in enumerate(query_history_dict_checker_from_csv[value]):
+					if value in query_history_dict:
+						if query_history_dict_checker_from_csv[value][i] != query_history_dict[value][i]:
+							t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'before')
+						else:
+							t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+					else:
+						t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'before')
+			except KeyError:
+				t0.insert(tk.INSERT, 'Запись будет добавлена в базу')
+				status = 'добавление'
 			t0['state'] = tk.DISABLED
 
 			t1['state'] = tk.NORMAL
 			t1.delete(0.0, tk.END)
-			w = evt.widget
-			value = w.get(int(w.curselection()[0]))
-			for i, row in enumerate(query_history_dict[value]):
-				if query_history_dict[value][i] != query_history_dict_checker[value][i]:
-					t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'warning')
-				else:
-					t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+
+			try:
+				for i, row in enumerate(query_history_dict[value]):
+					if value in query_history_dict_checker_from_csv:
+						if query_history_dict[value][i] != query_history_dict_checker_from_csv[value][i]:
+							t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'after')
+							status = 'изменения'
+						else:
+							t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
+					else:
+						t1.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n', 'after')
+			except KeyError:
+				t1.insert(tk.INSERT, 'Запись будет удалена из базы')
+				status = 'удаление'
 			t1['state'] = tk.DISABLED
+
+		def confirm_all_changes():
+			write_history(query_history_dict.values(), type_record='w')
+			messagebox.showinfo('Инфо', f'было принято {counter_of_changes} изменений', parent=window_for_refresh_base)
+
+		def save_checkbox_to_csv():
+			pass
+
+		def choose_changes_checkbox_menu():
+			window_for_choose_checkbox = tk.Toplevel(refresh_changes_window)  # нельзя нажимать в других окнах
+			window_for_choose_checkbox.title('Окно 3 чекбоксы')
+			window_for_choose_checkbox.geometry(f'{int(600.0 * scaling)}x{int(525.0 * scaling)}+1000+350')
+			window_for_choose_checkbox.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
+			def on_mousewheel(event):
+				scroll = -1 if event.delta > 0 else 1
+				my_canvas.yview_scroll(scroll, 'units')
+
+			# Create a main frame
+			main_frame = tk.Frame(window_for_choose_checkbox)
+			main_frame.pack(fill=tk.BOTH, expand=1)
+
+			# Create a canvas
+			my_canvas = tk.Canvas(main_frame)
+			my_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+
+			# Add a scrollbar to the canvas
+			my_scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=my_canvas.yview)
+			my_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+			# Configure the canvas
+			my_canvas.configure(yscrollcommand=my_scrollbar.set)
+			my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion = my_canvas.bbox('all')))
+
+			# Create ANOTHER frame INSIDE the canvas
+			second_frame = tk.Frame(my_canvas)
+
+			# Add that new frame to a window in the canvas
+			my_canvas.create_window((0,0), window=second_frame, anchor='nw')
+
+
+			dict_for_changes_save = {}
+
+			def confirm_changes_checkbox_menu():
+				write_history(query_history_dict.values(), type_record='w')
+			def set_checkbox_on(index):
+				if checkbox_variable_dict['checkbox_code_var_' + str(index)].get() == 'No':
+					dict_for_changes_save[query_history_changes[index]] = 'No'
+				if checkbox_variable_dict['checkbox_code_var_' + str(index)].get() == 'Yes':
+					dict_for_changes_save[query_history_changes[index]] = 'Yes'
+
+			def save_checkboxes_to_base():
+				for key in dict_for_changes_save.keys():
+					if dict_for_changes_save[key] == 'No':
+						try:
+							query_history_dict[key] = query_history_dict_checker_from_csv[key]
+						except KeyError:
+							del query_history_dict[key]
+				counter_of_changes_to_save = [x for x in dict_for_changes_save.values() if x == 'Yes']
+				askorcancel_save_checkboxes_to_base = messagebox.askokcancel('title', 'Вы действительно хотите принять измения?', parent=window_for_choose_checkbox)
+				if askorcancel_save_checkboxes_to_base == True:
+					write_history(query_history_dict.values(), type_record='w')
+					messagebox.showinfo('Инфо', f'Принято для {len(counter_of_changes_to_save)} изменений', parent=window_for_choose_checkbox)
+					window_for_choose_checkbox.destroy()
+					refresh_changes_window.destroy()
+					window_for_refresh_base.destroy()
+
+			def func_for_pass():
+				pass
+			index_for_column = 0
+			index_for_row = 1
+			checkbox_variable_dict = {}
+			x = len(query_history_changes)
+			if x <= 150:
+				my_canvas.unbind('<MouseWheel>')
+				my_canvas.configure(yscrollcommand=None)
+			x_rows = 25
+			if x > 150:
+				if x % 6 == 0:
+					x_rows = int(x/6)
+				else:
+					x_rows = int(x/6)+1
+			for i, code in enumerate(query_history_changes):
+				if i != 0 and  i % x_rows == 0:
+					index_for_row = 1
+					index_for_column += 1
+				checkbox_variable_dict['checkbox_code_var_' + str(i)] = tk.StringVar()
+				checkbox_variable_dict['checkbox_code_var_' + str(i)].set('Yes')
+				dict_for_changes_save[query_history_changes[i]] = 'Yes'
+				checkbox_variable_dict['checkbox_code' + str(i)] = tk.Checkbutton(
+					second_frame, text=f'{code}', variable=checkbox_variable_dict['checkbox_code_var_' + str(i)], command=lambda index=i: set_checkbox_on(index), offvalue='No', onvalue='Yes')
+				checkbox_variable_dict['checkbox_code' + str(i)].grid(row=index_for_row, column=index_for_column, stick='w')
+				index_for_row += 1
+
+
+			tk.Button(second_frame, text='Сохранить в базу', command=save_checkboxes_to_base).grid(
+				row=0, column=0, stick='w')
+		def close_refresh_changes_window():
+			refresh_changes_window.destroy()
+
 		query_history_dict = dict_from_csv()
-		query_history_dict_checker = query_history_dict.copy()
+		query_history_dict_checker_from_csv = query_history_dict.copy()
 
 		dict_from_excel = {}
 		for row in add_all_datas(load=False):
@@ -1485,18 +1604,13 @@ def refresh_base_from_excel():
 				query_history_changes.append(key)
 				counter_of_changes += 1
 		if counter_of_changes == 0:
-			messagebox.showinfo('готово', 'изменений нет', parent=window_for_refresh_base)
+			messagebox.showinfo('готово', 'Изменений нет', parent=window_for_refresh_base)
 		else:
 			refresh_changes_window = tk.Toplevel(window_for_refresh_base)
-			refresh_changes_window.title('Окно 2')
+			refresh_changes_window.title('Окно 2 меню изменений')
 			refresh_changes_window.geometry(f'{int(1200.0 * scaling)}x{int(500.0 * scaling)}+1200+400')
 			refresh_changes_window.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
-
-			# for code in query_history_changes:
-			# 	print(query_history_dict_checker[code], query_history_dict[code], sep='\n')
-
-			print(query_history_changes)
 			list_var_changes = tk.Variable(value=query_history_changes)
 			l0 = tk.Listbox(refresh_changes_window, listvariable=list_var_changes,
 			                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
@@ -1504,25 +1618,33 @@ def refresh_base_from_excel():
 			l0.bind('<<ListboxSelect>>', choose_changes)
 
 			t0 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+			t0.tag_configure("before", foreground="red", background='#FFFFDA')
 			t0.grid(row=0, column=1, padx=5)
 
 			t1 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
-			t1.tag_configure("warning", foreground="red")
+			t1.tag_configure("after", foreground="green", background='#FFFFDA')
 			t1.grid(row=0, column=2, padx=5)
 
-			# write_history(query_history_dict.values(), type_record='w')
-			# print(f'было принято {counter_of_changes} изменений')
+			tk.Button(refresh_changes_window, text='Отменить изменения', command=close_refresh_changes_window).grid(
+				row=1, column=0, stick='w')
+
+			tk.Button(refresh_changes_window, text='Выбрать изменения', command=choose_changes_checkbox_menu).grid(
+				row=1, column=1, stick='w')
+
+			tk.Button(refresh_changes_window, text='Принять все изменения', command=confirm_all_changes).grid(
+				row=1, column=2, stick='w')
 
 	####################################НАЧАЛО ФУНКЦИИ
 	window_for_refresh_base = tk.Toplevel(win)  # нельзя нажимать в других окнах
-	window_for_refresh_base.title('Окно 1')
+	window_for_refresh_base.title('Окно 1 база')
 	window_for_refresh_base.geometry(f'{int(600.0 * scaling)}x{int(500.0 * scaling)}+1000+350')
 	window_for_refresh_base.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 	tk.Button(window_for_refresh_base, text='Загрузить все в базу', command=add_all_datas).grid(row=0, column=0,
 	                                                                                            stick='w')
-	tk.Button(window_for_refresh_base, text='Загрузить только новые номера', command=add_only_new_position).grid(row=0,
-	                                                                                                             column=1,
-	                                                                                                             stick='w')
+	tk.Button(window_for_refresh_base, text='Загрузить только новые номера', command=add_only_new_position).grid(
+		row=0,
+		column=1,
+		stick='w')
 	tk.Button(window_for_refresh_base, text='Обновить все изменения из excel', command=refresh_changes).grid(row=0,
 	                                                                                                         column=2,
 	                                                                                                         stick='w')
@@ -1532,7 +1654,8 @@ def refresh_base_from_excel():
 tk.Label(win, text='Номер лабораторного журнала').grid(row=0, column=0, stick='e')
 nb_lab_journal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nb_lab_journal.grid(row=0, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(0), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(0),
+          borderwidth=0).grid(
 	row=0, column=2, stick='w', padx=5)
 tk.Button(win, text='Очистить все', command=clear_all_information).grid(row=0, column=3, stick='w')
 tk.Button(win, text='История', command=history_window).grid(row=0, column=4, stick='w')
@@ -1542,21 +1665,24 @@ tk.Button(win, text='Настройки', command=settings_window).grid(row=0, c
 tk.Label(win, text='Регистрационный номер пробы').grid(row=1, column=0, stick='e')
 rg_nb_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 rg_nb_sample.grid(row=1, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(1), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(1),
+          borderwidth=0).grid(
 	row=1, column=2, stick='w', padx=5)
 
 # двойное
 tk.Label(win, text='Наименование пробы(образца)').grid(row=2, column=0, stick='e')
 name_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 name_sample.grid(row=2, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(2), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(2),
+          borderwidth=0).grid(
 	row=2, column=2, stick='w', padx=5)
 
 # уникальное
 tk.Label(win, text='ФИО специалиста ответственного за пробоподготовку').grid(row=3, column=0, stick='e')
 nm_sample_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nm_sample_executor.grid(row=3, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(3), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(3),
+          borderwidth=0).grid(
 	row=3, column=2, stick='w', padx=5)
 tk.Button(win, text='Выбрать специалиста',
           command=lambda: start_window_0(nm_sample_executor, 'datas/nm_sample_executor.csv')).grid(row=3, column=3,
@@ -1566,14 +1692,16 @@ tk.Button(win, text='Выбрать специалиста',
 tk.Label(win, text='Примечания пробоподготовки').grid(row=4, column=0, stick='e')
 nt_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nt_sample.grid(row=4, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(4), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(4),
+          borderwidth=0).grid(
 	row=4, column=2, stick='w', padx=5)
 
 # уникальное
 tk.Label(win, text='Примечания регистрационного журнала').grid(row=5, column=0, stick='e')
 nt_register = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 nt_register.grid(row=5, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(5), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(5),
+          borderwidth=0).grid(
 	row=5, column=2, stick='w', padx=5)
 
 # Перечень показателей
@@ -1582,7 +1710,8 @@ list_of_indicators = ('не обнаружены', 'обнаружены')
 tk.Label(win, text='Перечень показателей через запятую').grid(row=6, column=0, stick='e')
 ls_indicators = tk.Entry(win, font=('Arial', 10), width=25)
 ls_indicators.grid(row=6, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(6), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(6),
+          borderwidth=0).grid(
 	row=6, column=2, stick='w', padx=5)
 combo_indicators = ttk.Combobox(win, values=list_of_indicators)
 combo_indicators.current(0)
@@ -1596,14 +1725,16 @@ tk.Label(win, text='Реквизиты НД для проведения проб
 det_nd_prep_sample = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 det_nd_prep_sample.grid(row=7, column=1)
 det_nd_prep_sample.bind("<FocusOut>", nd_check_button_off)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(7), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(7),
+          borderwidth=0).grid(
 	row=7, column=2, stick='w', padx=5)
 tk.Label(win, text='Реквизиты НД на метод исследования').grid(row=8, column=0, stick='e')
 det_nd_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 det_nd_research.bind("<FocusIn>", nd_check_button_off)
 det_nd_research.bind("<FocusOut>", nd_check_button_off)
 det_nd_research.grid(row=8, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(8), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(8),
+          borderwidth=0).grid(
 	row=8, column=2, stick='w', padx=5)
 nd_check_button = tk.Checkbutton(win, text='повторить реквизиты НД пробоподготовки', command=repeat_for_nd,
                                  variable=repeat_for_nd_value, offvalue='No', onvalue='Yes')
@@ -1615,17 +1746,20 @@ repeat_for_sp_value.set('No')
 tk.Label(win, text='ФИО специалиста проводившего исследование').grid(row=9, column=0, stick='e')
 sp_did_research = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 sp_did_research.grid(row=9, column=1)
-tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(9), borderwidth=0).grid(
+tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(9),
+          borderwidth=0).grid(
 	row=9, column=2, stick='w', padx=5)
 tk.Button(win, text='Выбрать специалиста',
-          command=lambda: start_window_0(sp_did_research, 'datas/sp_did_research.csv')).grid(row=9, column=3, stick='w')
+          command=lambda: start_window_0(sp_did_research, 'datas/sp_did_research.csv')).grid(row=9, column=3,
+                                                                                             stick='w')
 
 tk.Label(win, text='ФИО ответственного исполнителя').grid(row=10, column=0, stick='e')
 rsp_executor = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 rsp_executor.grid(row=10, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(10),
           borderwidth=0).grid(row=10, column=2, stick='w', padx=5)
-tk.Button(win, text='Выбрать специалиста', command=lambda: start_window_0(rsp_executor, 'datas/rsp_executor.csv')).grid(
+tk.Button(win, text='Выбрать специалиста',
+          command=lambda: start_window_0(rsp_executor, 'datas/rsp_executor.csv')).grid(
 	row=10, column=3, stick='w')
 
 # Даты начала
@@ -1701,9 +1835,9 @@ dt_fn_sample_prep.bind("<FocusIn>", dt_fn_1_check_off)
 dt_fn_sample_prep.bind("<FocusOut>", dt_fn_1_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(16),
           borderwidth=0).grid(row=16, column=2, stick='w', padx=5)
-dt_st_check_button_1 = tk.Checkbutton(win, text='повторить дату окончания исследования', command=repeat_for_dt_fn_1,
+dt_fn_check_button_1 = tk.Checkbutton(win, text='повторить дату окончания исследования', command=repeat_for_dt_fn_1,
                                       variable=dt_fn_value_1, offvalue='No', onvalue='Yes')
-dt_st_check_button_1.grid(row=16, column=3, stick='w')
+dt_fn_check_button_1.grid(row=16, column=3, stick='w')
 
 tk.Label(win, text='Дата утилизации пробы/сведения о консервации').grid(row=17, column=0, stick='e')
 dt_disposal = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
@@ -1712,18 +1846,19 @@ dt_disposal.bind("<FocusIn>", dt_fn_2_check_off)
 dt_disposal.bind("<FocusOut>", dt_fn_2_check_off)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(17),
           borderwidth=0).grid(row=17, column=2, stick='w', padx=5)
-dt_st_check_button_2 = tk.Checkbutton(win, text='повторить дату окончания исследования',
-                                      command=repeat_for_dt_fn_2, variable=dt_fn_value_2, offvalue='No', onvalue='Yes')
-dt_st_check_button_2.grid(row=17, column=3, stick='w')
+dt_fn_check_button_2 = tk.Checkbutton(win, text='повторить дату окончания исследования',
+                                      command=repeat_for_dt_fn_2, variable=dt_fn_value_2, offvalue='No',
+                                      onvalue='Yes')
+dt_fn_check_button_2.grid(row=17, column=3, stick='w')
 
 tk.Label(win, text='Дата выписки листа протокола').grid(row=18, column=0, stick='e')
 dt_issue_protocol = tk.Entry(win, justify=tk.LEFT, font=('Arial', 10), width=25)
 dt_issue_protocol.grid(row=18, column=1)
 tk.Button(win, text='x', activeforeground='red', foreground='black', command=lambda: clear_cell(18),
           borderwidth=0).grid(row=18, column=2, stick='w', padx=5)
-dt_st_check_button_3 = tk.Checkbutton(win, text='повторить дату окончания исследования', command=repeat_for_dt_fn_3,
+dt_fn_check_button_3 = tk.Checkbutton(win, text='повторить дату окончания исследования', command=repeat_for_dt_fn_3,
                                       variable=dt_fn_value_3, offvalue='No', onvalue='Yes')
-dt_st_check_button_3.grid(row=18, column=3, stick='w')
+dt_fn_check_button_3.grid(row=18, column=3, stick='w')
 dt_issue_protocol.bind("<FocusIn>", dt_fn_3_check_off)
 dt_issue_protocol.bind("<FocusOut>", dt_fn_3_check_off)
 # Этапы исследования
@@ -1769,7 +1904,8 @@ tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=ex
                                                                                       pady=10)
 tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=start_window_for_word).grid(
 	row=100, column=1, stick='e', pady=10)
-tk.Button(win, text='Добавить в историю из excel', command=refresh_base_from_excel).grid(row=100, column=4, stick='w')
+tk.Button(win, text='Добавить в историю из excel', command=refresh_base_from_excel).grid(row=100, column=4,
+                                                                                         stick='w')
 
 variables_for_row = [nb_lab_journal, rg_nb_sample, name_sample, nm_sample_executor, nt_sample, nt_register,
                      ls_indicators, det_nd_prep_sample, det_nd_research, sp_did_research, rsp_executor,
