@@ -561,120 +561,7 @@ def dict_from_csv():
 	return csv_dict
 
 
-def history_window():
-	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
-	history_window_0.title('Окно 1')
-	history_window_0.geometry(f'{int(750.0 * scaling)}x{int(400.0 * scaling)}+1300+350')
-	history_window_0.wm_attributes("-topmost", 0)  # чтобы повешать поверх все окон, но работает и без
-	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
-
-	def choose_code(evt):
-		t0['state'] = tk.NORMAL
-		t0.delete(0.0, tk.END)
-		w = evt.widget
-		value = w.get(int(w.curselection()[0]))
-		for i, row in enumerate(history_dict[value]):
-			t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
-		t0['state'] = tk.DISABLED
-
-	def confirm_to_main():
-		global default_indicator
-		selection = l0.curselection()
-		value = l0.get(int(l0.curselection()[0]))
-		for i in range(len(variables_for_row)):
-			variables_for_row[i].delete(0, tk.END)
-			if i == 6:
-				indicator_names = history_dict[value][i]
-				if ' не обнаружены' in indicator_names:
-					indicator_names = indicator_names.replace(' не обнаружены', '')
-					variables_for_row[i].insert(0, indicator_names)
-					combo_indicators.current(0)
-				else:
-					indicator_names = indicator_names.replace(' обнаружены', '')
-					variables_for_row[i].insert(0, indicator_names)
-					combo_indicators.current(1)
-			else:
-				variables_for_row[i].insert(0, history_dict[value][i])
-
-	def confirm_empty_to_main():
-		selection = l0.curselection()
-		value = l0.get(int(l0.curselection()[0]))
-		for i in range(len(variables_for_row)):
-			if variables_for_row[i].get() == '':
-				if i == 6:
-					indicator_names = history_dict[value][i]
-					if ' не обнаружены' in indicator_names:
-						indicator_names = indicator_names.replace(' не обнаружены', '')
-						variables_for_row[i].insert(0, indicator_names)
-						combo_indicators.current(0)
-					else:
-						indicator_names = indicator_names.replace(' обнаружены', '')
-						variables_for_row[i].insert(0, indicator_names)
-						combo_indicators.current(1)
-				else:
-					variables_for_row[i].insert(0, history_dict[value][i])
-
-	def delete_from_csv():
-		global bug_catcher
-		selection = l0.curselection()
-		value = l0.get(int(l0.curselection()[0]))
-		old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
-		new_csv = []
-		for row in old_csv:
-			if value not in row:
-				new_csv.append(row)
-			else:
-				answer = messagebox.askokcancel('Предупреждение', 'Вы точно хотите удалить?', parent=history_window_0)
-				if answer == False:
-					new_csv.append(row)
-				else:
-					t0['state'] = tk.NORMAL
-					t0.delete(0.0, tk.END)
-					l0.delete(selection[0])
-					t0['state'] = tk.DISABLED
-		write_history(new_csv, type_record='w')
-
-	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
-	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
-	                     'Примечания регистрационного журнала', 'Перечень показателей через запятую',
-	                     'Реквизиты НД для проведения пробоподготовки',
-	                     'Реквизиты НД на метод исследования', 'ФИО специалиста проводившего исследование',
-	                     'ФИО ответственного исполнителя', 'Дата начала исследования', 'Дата начала пробоподготовки',
-	                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
-	                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
-	                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
-
-	history_dict = dict_from_csv()
-	history_samples = list(history_dict)[::-1]
-
-	list_var = tk.Variable(value=history_samples)
-	l0 = tk.Listbox(history_window_0, listvariable=list_var,
-	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
-	l0.grid(row=0, column=0, stick='e')
-	l0.bind('<<ListboxSelect>>', choose_code)
-
-	t0 = tk.Text(history_window_0, width=100, state=tk.DISABLED)
-	t0.grid(row=0, column=1, columnspan=2, padx=5)
-
-	b0 = tk.Button(history_window_0, text='Удалить запись', font=('Arial', '14'), command=delete_from_csv)
-	b0.grid(row=1, column=0, pady=5)
-	b1 = tk.Button(history_window_0, text='Заполнить только пустые', font=('Arial', '14'),
-	               command=confirm_empty_to_main)
-	b1.grid(row=1, column=1, pady=5)
-	b2 = tk.Button(history_window_0, text='Применить', font=('Arial', '14'), command=confirm_to_main)
-	b2.grid(row=1, column=2, pady=5)
-
-
-def clear_all_information():
-	for i in range(len(variables_for_row)):
-		variables_for_row[i].delete(0, tk.END)
-
-
-def clear_cell(index):
-	variables_for_row[index].delete(0, tk.END)
-
-
-def word_func(dict_for_word):
+def word_func(dict_for_word, history_window_0):
 	dict_first_item = next(iter(dict_for_word.values()))
 	executor = dict_first_item[9]
 	sample_name = dict_first_item[1]
@@ -806,7 +693,7 @@ def word_func(dict_for_word):
 	cell2_0_0.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
 
 	cell2_0_2 = table_2.cell(0, 2)
-	cell2_0_2.text = sp_did_research.get()
+	cell2_0_2.text = executor
 	cell2_0_2.paragraphs[0].runs[0].font.size = Pt(11)
 	cell2_0_2.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 	cell2_0_2.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
@@ -833,13 +720,20 @@ def word_func(dict_for_word):
 
 	print('Word файл сгенерирован')
 	doc.save(f'docs/{sample_name_code}.docx')
+	messagebox.showinfo('Инфо', f'Word файл для {sample_name_code} сгенерирован', parent=history_window_0)
 
 
-def start_window_for_word():
+def history_window():
+	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
+	history_window_0.title('Окно 1')
+	history_window_0.geometry(f'{int(750.0 * scaling)}x{int(400.0 * scaling)}+1300+350')
+	history_window_0.wm_attributes("-topmost", 0)  # чтобы повешать поверх все окон, но работает и без
+	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
 	def func_for_window():
 		selection = l0.curselection()
 		value = l0.get(int(l0.curselection()[0]))
-		dict_for_word = {k: v for k, v in data_set_dict.items() if re.fullmatch(f"{value}{r'-\d+'}", k)}
+		dict_for_word = {k: v for k, v in history_dict.items() if re.fullmatch(f"{value}{r'-\d+'}", k)}
 		l1 = dict_for_word.keys()
 		d0 = {}
 		for i in l1:
@@ -849,29 +743,109 @@ def start_window_for_word():
 		d0 = list(d0_new.values())
 		dict_for_word = dict(sorted(dict_for_word.items(), key=lambda pair: d0.index(pair[0])))
 		if len(dict_for_word) == 0:
-			dict_for_word[value] = data_set_dict[value]
-		print(dict_for_word)
-		word_func(dict_for_word)
+			dict_for_word[value] = history_dict[value]
+		word_func(dict_for_word, history_window_0=history_window_0)
 
-	def show_codes(evt):
+	def confirm_to_main():
+		global default_indicator
+		selection = l1.curselection()
+		value = l1.get(int(l1.curselection()[0]))
+		for i in range(len(variables_for_row)):
+			variables_for_row[i].delete(0, tk.END)
+			if i == 6:
+				indicator_names = history_dict[value][i]
+				if ' не обнаружены' in indicator_names:
+					indicator_names = indicator_names.replace(' не обнаружены', '')
+					variables_for_row[i].insert(0, indicator_names)
+					combo_indicators.current(0)
+				else:
+					indicator_names = indicator_names.replace(' обнаружены', '')
+					variables_for_row[i].insert(0, indicator_names)
+					combo_indicators.current(1)
+			else:
+				variables_for_row[i].insert(0, history_dict[value][i])
+
+	def confirm_empty_to_main():
+		selection = l1.curselection()
+		value = l1.get(int(l1.curselection()[0]))
+		for i in range(len(variables_for_row)):
+			if variables_for_row[i].get() == '':
+				if i == 6:
+					indicator_names = history_dict[value][i]
+					if ' не обнаружены' in indicator_names:
+						indicator_names = indicator_names.replace(' не обнаружены', '')
+						variables_for_row[i].insert(0, indicator_names)
+						combo_indicators.current(0)
+					else:
+						indicator_names = indicator_names.replace(' обнаружены', '')
+						variables_for_row[i].insert(0, indicator_names)
+						combo_indicators.current(1)
+				else:
+					variables_for_row[i].insert(0, history_dict[value][i])
+
+	def delete_from_csv():
+		selection = l1.curselection()
+		value = l1.get(int(l1.curselection()[0]))
+		old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
+		new_csv = []
+		for row in old_csv:
+			if value not in row:
+				new_csv.append(row)
+			else:
+				answer = messagebox.askokcancel('Предупреждение', 'Вы точно хотите удалить?', parent=history_window_0)
+				if answer == False:
+					new_csv.append(row)
+				else:
+					t0['state'] = tk.NORMAL
+					t0.delete(0.0, tk.END)
+					l1.delete(selection[0])
+					t0['state'] = tk.DISABLED
+		write_history(new_csv, type_record='w')
+
+	def choose_code_l1(evt):
+		if t0.grid_info() == {}:
+			t0.grid(row=0, column=2, columnspan=2)
 		t0['state'] = tk.NORMAL
 		t0.delete(0.0, tk.END)
 		w = evt.widget
 		value = w.get(int(w.curselection()[0]))
-		for i, row in enumerate(dict_for_data_set[value]):
-			t0.insert(tk.INSERT, row + '\n')
+		for i, row in enumerate(history_dict[value]):
+			t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
 		t0['state'] = tk.DISABLED
+		b1.grid(row=1, column=1)
+		b2.grid(row=1, column=2)
+		b3.grid(row=1, column=3)
 
-	window_for_word = tk.Toplevel(win)  # нельзя нажимать в других окнах
-	window_for_word.title('Окно 1')
-	window_for_word.geometry(f'{int(400.0 * scaling)}x{int(500.0 * scaling)}+1000+350')
-	window_for_word.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+	def show_codes_l0(evt):
+		sample_codes_code = []
+		w = evt.widget
+		value = w.get(int(w.curselection()[0]))
+		for i, row in enumerate(dict_for_history_set[value]):
+			sample_codes_code.append(row)
 
-	data_set_dict = dict_from_csv()
-	data_set_list = list(data_set_dict)[::-1]
-	# data_set_list = list(sorted(data_set_list, key=lambda x: int(x.split('-')[-1])))
-	dict_for_data_set = defaultdict(list)
-	for i in data_set_list:
+		list_var_code_from_codes = tk.Variable(value=sample_codes_code)
+		l1['listvariable'] = list_var_code_from_codes
+		l1.grid(row=0, column=1, stick='w')
+		b1.grid_forget()
+		b2.grid_forget()
+		b3.grid_forget()
+		t0.grid_forget()
+
+	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
+	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
+	                     'Примечания регистрационного журнала', 'Перечень показателей через запятую',
+	                     'Реквизиты НД для проведения пробоподготовки',
+	                     'Реквизиты НД на метод исследования', 'ФИО специалиста проводившего исследование',
+	                     'ФИО ответственного исполнителя', 'Дата начала исследования', 'Дата начала пробоподготовки',
+	                     'Дата отбора пробы (образца)', 'Дата поступления', 'Дата окончания исследования',
+	                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
+	                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
+
+	history_dict = dict_from_csv()
+	history_samples = list(history_dict)[::-1]
+
+	dict_for_history_set = defaultdict(list)
+	for i in history_samples:
 		try:
 			code = i.split('-')
 			if len(code) > 3:
@@ -880,22 +854,43 @@ def start_window_for_word():
 				code = i
 		except:
 			code = i
-		dict_for_data_set[code].append(i)
-	for key in dict_for_data_set.keys():
-		if len(dict_for_data_set[key]) > 1:
-			dict_for_data_set[key] = sorted(dict_for_data_set[key], key=lambda y: int(y.split('-')[-1]))
+		dict_for_history_set[code].append(i)
+	for key in dict_for_history_set.keys():
+		if len(dict_for_history_set[key]) > 1:
+			dict_for_history_set[key] = sorted(dict_for_history_set[key], key=lambda y: int(y.split('-')[-1]))
 
-	sample_codes = [key for key in dict_for_data_set]
+	sample_codes = [key for key in dict_for_history_set]
 
-	t0 = tk.Text(window_for_word, width=30, state=tk.DISABLED)
-	t0.grid(row=0, column=1, padx=5)
-	list_var = tk.Variable(value=sample_codes)
-	l0 = tk.Listbox(window_for_word, listvariable=list_var,
+	list_var_codes = tk.Variable(value=sample_codes)
+	l0 = tk.Listbox(history_window_0, height=25, font=('Calibri', '10'), listvariable=list_var_codes,
 	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
 	l0.grid(row=0, column=0, stick='e')
-	l0.bind('<<ListboxSelect>>', show_codes)
-	b1 = tk.Button(window_for_word, text='Применить', font=('Arial', '14'), command=func_for_window)
-	b1.grid(row=1, column=1, pady=20)
+	l0.bind('<<ListboxSelect>>', show_codes_l0)
+	# exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+
+	sample_codes_code = []
+	list_var_code_from_codes = tk.Variable(value=sample_codes_code)
+	l1 = tk.Listbox(history_window_0, height=25, font=('Calibri', '10'), listvariable=list_var_code_from_codes,
+	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+	l1.bind('<<ListboxSelect>>', choose_code_l1)
+
+	t0 = tk.Text(history_window_0, width=100, height=26, font=('Calibri', '10'), state=tk.DISABLED)
+
+	b0 = tk.Button(history_window_0, text='Сгенерировать ворд', font=('Arial', '10'), command=func_for_window)
+	b0.grid(row=1, column=0)
+	b1 = tk.Button(history_window_0, text='Удалить запись', font=('Arial', '10'), command=delete_from_csv)
+	b2 = tk.Button(history_window_0, text='Заполнить только пустые', font=('Arial', '10'),
+	               command=confirm_empty_to_main)
+	b3 = tk.Button(history_window_0, text='Применить', font=('Arial', '10'), command=confirm_to_main)
+
+
+def clear_all_information():
+	for i in range(len(variables_for_row)):
+		variables_for_row[i].delete(0, tk.END)
+
+
+def clear_cell(index):
+	variables_for_row[index].delete(0, tk.END)
 
 
 def add_all_datas(load=True):
@@ -1327,14 +1322,21 @@ def refresh_changes():
 			index_for_row += 1
 
 		def uncheckbox_all():
-			for i, key in enumerate(dict_for_changes_save):
-				checkbox_variable_dict['checkbox_code_var_' + str(i)].set('No')
-				dict_for_changes_save[key] = 'No'
+			if checkboxes_on_off['text'] == 'Снять все галочки':
+				for i, key in enumerate(dict_for_changes_save):
+					checkbox_variable_dict['checkbox_code_var_' + str(i)].set('No')
+					dict_for_changes_save[key] = 'No'
+				checkboxes_on_off['text'] = 'Выделить все галчоки'
+			elif checkboxes_on_off['text'] == 'Выделить все галчоки':
+				for i, key in enumerate(dict_for_changes_save):
+					checkbox_variable_dict['checkbox_code_var_' + str(i)].set('Yes')
+					dict_for_changes_save[key] = 'Yes'
+				checkboxes_on_off['text'] = 'Снять все галочки'
 
 		tk.Button(second_frame, text='Сохранить в базу', command=save_checkboxes_to_base).grid(
 			row=0, column=0, stick='w')
-		tk.Button(second_frame, text='Снять все галочки', command=uncheckbox_all).grid(
-			row=0, column=2, stick='w')
+		checkboxes_on_off = tk.Button(second_frame, text='Снять все галочки', command=uncheckbox_all)
+		checkboxes_on_off.grid(row=0, column=2, stick='w')
 
 	def close_refresh_changes_window():
 		refresh_changes_window.destroy()
@@ -1662,8 +1664,8 @@ op_xl_button.grid(row=22, column=4, stick='w')
 # Кнопка на сервер
 tk.Button(text='Добавить в excel', bd=5, font=('Arial', 10), command=excel_func).grid(row=100, column=0, stick='e',
                                                                                       pady=10)
-tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=start_window_for_word).grid(
-	row=100, column=1, stick='e', pady=10)
+# tk.Button(text='Сгенерировать word файл', bd=5, font=('Arial', 10), command=start_window_for_word).grid(
+# 	row=100, column=1, stick='e', pady=10)
 tk.Button(win, text='Добавить в историю из excel', command=refresh_changes).grid(row=100, column=4,
                                                                                  stick='w')
 
