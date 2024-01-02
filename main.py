@@ -49,6 +49,7 @@ def read_csv_one_string(filename, delimiter=';'):
 			return row
 
 
+
 def read_csv_full(filename, delimiter=';'):
 	with open(filename, 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter=delimiter)
@@ -66,11 +67,41 @@ def write_csv(row, filename, delimiter=';'):
 		writer.writerow(row)
 		f.close()
 
+def write_settings_csv(value, row_number, filename='datas/settings.csv'):
+	settings_list = read_csv_one_string(filename='datas/settings.csv')
+	settings_list[row_number] = value
+	with open(filename, 'w', newline='', encoding='utf-8') as f:
+		writer = csv.writer(f, delimiter=';')
+		writer.writerow(settings_list)
+		f.close()
+
+base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
+base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
 
 def settings_window():
+	def bases_file_1():
+		global base_path1
+		ebase1_path['state'] = tk.NORMAL
+		base_path1 = filedialog.askopenfilename()
+		messagebox.askokcancel('Инфо', 'Вы точно хотите сменить файл пробоподготовки?', parent=window_for_settings)
+		write_settings_csv(base_path1, row_number=1)
+		ebase1_path.delete(0, tk.END)
+		ebase1_path.insert(0, base_path1)
+		ebase1_path['state'] = tk.DISABLED
+
+	def bases_file_2():
+		global base_path2
+		ebase2_path['state'] = tk.NORMAL
+		base_path2 = filedialog.askopenfilename()
+		messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?', parent=window_for_settings)
+		write_settings_csv(base_path2, row_number=2)
+		ebase2_path.delete(0, tk.END)
+		ebase2_path.insert(0, base_path2)
+		ebase2_path['state'] = tk.DISABLED
+
 	def scaling_option(scaling_number):
 		win.tk.call('tk', 'scaling', scaling_number)
-		write_csv([scaling_number], 'datas/setting.csv')
+		write_settings_csv(value=scaling_number, row_number=0)
 		check_scaling_messagebox = messagebox.askokcancel('Предупреждение',
 		                                                  'Чтобы применение вступило в силу необходимо перезагрузить приложение. Нажмите ОК если хотите перезагрузить приложение сейчас (введенные данные будут утеряны). Нажмите Отмена, если хотите самостоятельно перезагрузить приложение.',
 		                                                  parent=window_for_settings)
@@ -80,17 +111,32 @@ def settings_window():
 
 	window_for_settings = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	window_for_settings.title('Настройки')
-	window_for_settings.geometry(f'{int(500.0 * scaling)}x{int(300.0 * scaling)}+1000+350')
+	window_for_settings.geometry(f'{int(430 * scaling)}x{int(200.0 * scaling)}+1000+350')
 	window_for_settings.protocol('WM_DELETE_WINDOW')  # закрытие приложения
-	tk.Label(window_for_settings, text='Введите коэффициент масштабирования').pack()
-	tk.Label(window_for_settings, text=f'Текущий значение - {scaling}').pack()
+	tk.Label(window_for_settings, text='Введите коэффициент масштабирования').grid(row=0, column=0)
+	tk.Label(window_for_settings, text=f'Текущий значение - {scaling}').grid(row=1, column=0)
 	scaling_entry = tk.Entry(window_for_settings)
-	scaling_entry.pack()
-	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).pack()
+	scaling_entry.grid(row=2, column=0)
+	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).grid(row=3, column=0)
+
+	tk.Label(window_for_settings, text='Выбери файл прободготовки для выгрузки в базу').grid(row=4, column=0)
+	ebase1_path = tk.Entry(window_for_settings, justify=tk.CENTER, font=('Arial', 10), width=80)
+	ebase1_path.insert(0, base_path1)
+	ebase1_path['state'] = tk.DISABLED
+	ebase1_path.grid(row=5, column=0)
+	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_1).grid(row=6,
+	                                                                                                          column=0)
+
+	tk.Label(window_for_settings, text='Выбери регистрационный файл для выгрузки в базу').grid(row=7, column=0)
+	ebase2_path = tk.Entry(window_for_settings, justify=tk.CENTER, font=('Arial', 10), width=80)
+	ebase2_path.insert(0, base_path2)
+	ebase2_path['state'] = tk.DISABLED
+	ebase2_path.grid(row=8, column=0)
+	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_2).grid(row=9,
+	                                                                                                          column=0)
 
 
-scaling = ('').join(read_csv_one_string('datas/setting.csv'))
-scaling = float(scaling)
+scaling = float(read_csv_one_string('datas/settings.csv')[0])
 
 win = tk.Tk()
 text_copy = tkinter.scrolledtext.ScrolledText(master=win, wrap='none')
@@ -325,6 +371,7 @@ def get_file_1():
 	e1_path['state'] = tk.NORMAL
 	path_1 = filedialog.askopenfilename()
 	# tk.Label(win, text=path_1, anchor='w', width=10, height=1).grid(row=21, column=1, stick='w')
+	e1_path.delete(0, tk.END)
 	e1_path.insert(0, path_1)
 	e1_path['state'] = tk.DISABLED
 
@@ -334,12 +381,13 @@ def get_file_2():
 	e2_path['state'] = tk.NORMAL
 	path_2 = filedialog.askopenfilename()
 	# tk.Label(win, text=path_2, anchor='w', width=20, height=1).grid(row=22, column=1, stick='w')
+	e2_path.delete(0, tk.END)
 	e2_path.insert(0, path_2)
 	e2_path['state'] = tk.DISABLED
 
 
 def repeat_for_nd():
-	det_nd_research.delete(0, tk.END)
+	det_nd_research1(0, tk.END)
 	if repeat_for_nd_value.get() == 'Yes':
 		det_nd_research.insert(0, det_nd_prep_sample.get())
 
@@ -894,10 +942,10 @@ def clear_cell(index):
 
 
 def add_all_datas(load=True):
-	book_1 = op.load_workbook(filename='docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx')
+	book_1 = op.load_workbook(filename=base_path1)
 	sheet_1 = book_1.active
 
-	book_2 = op.load_workbook(filename='docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx')
+	book_2 = op.load_workbook(filename=base_path2)
 	sheet_2 = book_2.active
 
 	raw_data_sample = []
