@@ -75,30 +75,65 @@ def write_settings_csv(value, row_number, filename='datas/settings.csv'):
 		writer.writerow(settings_list)
 		f.close()
 
-base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
-base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
+
+try:
+	if read_csv_one_string(filename='datas/settings.csv')[1] == '':
+		base_path1 = 'docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx'
+	else:
+		base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
+except FileNotFoundError:
+	with open('datas/settings.csv', 'w', newline='', encoding='utf-8') as f:
+		writer = csv.writer(f, delimiter=';')
+		writer.writerow([
+			1.0,
+			'',
+			'',
+			'Кулемин И.А.'
+		])
+	if read_csv_one_string(filename='datas/settings.csv')[1] == '':
+		base_path1 = 'docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx'
+	else:
+		base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
+	if read_csv_one_string(filename='datas/settings.csv')[2] == '':
+		base_path2= 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
+	else:
+		base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
+else:
+	if read_csv_one_string(filename='datas/settings.csv')[2] == '':
+		base_path2= 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
+	else:
+		base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
 
 def settings_window():
 	def bases_file_1():
 		global base_path1
 		ebase1_path['state'] = tk.NORMAL
 		base_path1 = filedialog.askopenfilename()
-		messagebox.askokcancel('Инфо', 'Вы точно хотите сменить файл пробоподготовки?', parent=window_for_settings)
-		write_settings_csv(base_path1, row_number=1)
-		ebase1_path.delete(0, tk.END)
-		ebase1_path.insert(0, base_path1)
-		ebase1_path['state'] = tk.DISABLED
+		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить файл пробоподготовки?', parent=window_for_settings)
+		if ask_or:
+			write_settings_csv(base_path1, row_number=1)
+			ebase1_path.delete(0, tk.END)
+			ebase1_path.insert(0, base_path1)
+			ebase1_path['state'] = tk.DISABLED
 
 	def bases_file_2():
 		global base_path2
 		ebase2_path['state'] = tk.NORMAL
 		base_path2 = filedialog.askopenfilename()
-		messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?', parent=window_for_settings)
-		write_settings_csv(base_path2, row_number=2)
-		ebase2_path.delete(0, tk.END)
-		ebase2_path.insert(0, base_path2)
-		ebase2_path['state'] = tk.DISABLED
-
+		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?', parent=window_for_settings)
+		if ask_or:
+			write_settings_csv(base_path2, row_number=2)
+			ebase2_path.delete(0, tk.END)
+			ebase2_path.insert(0, base_path2)
+			ebase2_path['state'] = tk.DISABLED
+	def change_head_of_department():
+		global head_of_department
+		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?', parent=window_for_settings)
+		if ask_or:
+			write_settings_csv(head_of_label_entry.get(), row_number=3)
+			head_of_department = read_csv_one_string(filename='datas/settings.csv')[3]
+			head_of_label.config(text=head_of_department)
+			head_of_label_entry.delete(0, tk.END)
 	def scaling_option(scaling_number):
 		win.tk.call('tk', 'scaling', scaling_number)
 		write_settings_csv(value=scaling_number, row_number=0)
@@ -111,8 +146,9 @@ def settings_window():
 
 	window_for_settings = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	window_for_settings.title('Настройки')
-	window_for_settings.geometry(f'{int(430 * scaling)}x{int(200.0 * scaling)}+1000+350')
+	window_for_settings.geometry(f'{int(430 * scaling)}x{int(260.0 * scaling)}+1000+350')
 	window_for_settings.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
 	tk.Label(window_for_settings, text='Введите коэффициент масштабирования').grid(row=0, column=0)
 	tk.Label(window_for_settings, text=f'Текущий значение - {scaling}').grid(row=1, column=0)
 	scaling_entry = tk.Entry(window_for_settings)
@@ -132,11 +168,17 @@ def settings_window():
 	ebase2_path.insert(0, base_path2)
 	ebase2_path['state'] = tk.DISABLED
 	ebase2_path.grid(row=8, column=0)
-	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_2).grid(row=9,
-	                                                                                                          column=0)
+	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_2).grid(row=9, column=0)
 
+	tk.Label(window_for_settings, text='Заведующий паразитологической лабораторией').grid(row=10, column=0)
+	head_of_label = tk.Label(window_for_settings, text=head_of_department)
+	head_of_label.grid(row=11, column=0)
+	head_of_label_entry = tk.Entry(window_for_settings)
+	head_of_label_entry.grid(row=12, column=0)
+	tk.Button(window_for_settings, text='Применить', command=change_head_of_department).grid(row=13, column=0)
 
 scaling = float(read_csv_one_string('datas/settings.csv')[0])
+head_of_department = read_csv_one_string('datas/settings.csv')[3]
 
 win = tk.Tk()
 text_copy = tkinter.scrolledtext.ScrolledText(master=win, wrap='none')
@@ -554,6 +596,7 @@ def start_window_0(variable, filename):
 		if list_employees:
 			if new_employee not in list_employees:
 				write_csv(list_employees + [new_employee], filename)
+				employees.append(new_employee)
 			else:
 				messagebox.showerror('Ошибка', 'Такой сотрудник уже в списке!', parent=new_window_0)
 				return
@@ -754,7 +797,7 @@ def word_func(dict_for_word, history_window_0):
 	cell2_1_0.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
 
 	cell2_1_2 = table_2.cell(1, 2)
-	cell2_1_2.text = 'Кулемин И.А.'
+	cell2_1_2.text = head_of_department
 	cell2_1_2.paragraphs[0].runs[0].font.size = Pt(11)
 	cell2_1_2.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 	cell2_1_2.vertical_alignment = WD_ALIGN_VERTICAL.BOTTOM
@@ -779,20 +822,24 @@ def history_window():
 	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
 	def func_for_window():
-		selection = l0.curselection()
-		value = l0.get(int(l0.curselection()[0]))
-		dict_for_word = {k: v for k, v in history_dict.items() if re.fullmatch(f"{value}{r'-\d+'}", k)}
-		l1 = dict_for_word.keys()
-		d0 = {}
-		for i in l1:
-			row = i.split('-')
-			d0[int(row[-1])] = i
-		d0_new = dict(sorted(d0.items()))
-		d0 = list(d0_new.values())
-		dict_for_word = dict(sorted(dict_for_word.items(), key=lambda pair: d0.index(pair[0])))
-		if len(dict_for_word) == 0:
-			dict_for_word[value] = history_dict[value]
-		word_func(dict_for_word, history_window_0=history_window_0)
+		try:
+			selection = l0.curselection()
+			value = l0.get(int(l0.curselection()[0]))
+		except:
+			messagebox.showerror('Ошибка', 'Вы не выбрали группу для генерации', parent=history_window_0)
+		else:
+			dict_for_word = {k: v for k, v in history_dict.items() if re.fullmatch(f"{value}{r'-\d+'}", k)}
+			l1 = dict_for_word.keys()
+			d0 = {}
+			for i in l1:
+				row = i.split('-')
+				d0[int(row[-1])] = i
+			d0_new = dict(sorted(d0.items()))
+			d0 = list(d0_new.values())
+			dict_for_word = dict(sorted(dict_for_word.items(), key=lambda pair: d0.index(pair[0])))
+			if len(dict_for_word) == 0:
+				dict_for_word[value] = history_dict[value]
+			word_func(dict_for_word, history_window_0=history_window_0)
 
 	def confirm_to_main():
 		global default_indicator
