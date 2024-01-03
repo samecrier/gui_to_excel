@@ -24,12 +24,6 @@ import os
 path_1 = ''
 path_2 = ''
 
-refactor_nd_codes = {
-	'яйца гельминтов': 'МУК 4.2.2661-10 п.4.2',
-	'цисты кишечных патогенных простейших организмов': 'МУК 4.2.2661-10, п. 4.7',
-	'цисты лямблий': 'МУК 4.2.2314-08 п.5.1.3.1',
-}
-
 
 @staticmethod
 def keypress(event):
@@ -49,8 +43,7 @@ def read_csv_one_string(filename, delimiter=';'):
 			return row
 
 
-
-def read_csv_full(filename, delimiter=';'):
+def read_csv_full(filename, delimiter='&'):
 	with open(filename, 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter=delimiter)
 		csv_list = []
@@ -67,6 +60,7 @@ def write_csv(row, filename, delimiter=';'):
 		writer.writerow(row)
 		f.close()
 
+
 def write_settings_csv(value, row_number, filename='datas/settings.csv'):
 	settings_list = read_csv_one_string(filename='datas/settings.csv')
 	settings_list[row_number] = value
@@ -75,6 +69,22 @@ def write_settings_csv(value, row_number, filename='datas/settings.csv'):
 		writer.writerow(settings_list)
 		f.close()
 
+
+def write_dict_to_list(dict_for_func, filename='datas/indicators_to_code.csv', type_record='w'):
+	dict_to_list = [[k, v] for k, v in dict_for_func.items()]
+	with open(file=filename, mode=type_record, newline='', encoding='utf-8') as f:
+		for row in dict_to_list:
+			writer = csv.writer(f, delimiter='&')
+			writer.writerow(row)
+		f.close()
+def read_csv_to_dict(filename='datas/indicators_to_code.csv'):
+	csv_to_dict = {}
+	with open(file=filename, newline='', encoding='utf-8') as f:
+		dict_to_list = csv.reader(f, delimiter='&')
+		for row in dict_to_list:
+			csv_to_dict[row[0]] = row[1]
+		f.close()
+	return csv_to_dict
 
 try:
 	if read_csv_one_string(filename='datas/settings.csv')[1] == '':
@@ -95,21 +105,23 @@ except FileNotFoundError:
 	else:
 		base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
 	if read_csv_one_string(filename='datas/settings.csv')[2] == '':
-		base_path2= 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
+		base_path2 = 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
 	else:
 		base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
 else:
 	if read_csv_one_string(filename='datas/settings.csv')[2] == '':
-		base_path2= 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
+		base_path2 = 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
 	else:
 		base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
+
 
 def settings_window():
 	def bases_file_1():
 		global base_path1
 		ebase1_path['state'] = tk.NORMAL
 		base_path1 = filedialog.askopenfilename()
-		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить файл пробоподготовки?', parent=window_for_settings)
+		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить файл пробоподготовки?',
+		                                parent=window_for_settings)
 		if ask_or:
 			write_settings_csv(base_path1, row_number=1)
 			ebase1_path.delete(0, tk.END)
@@ -120,20 +132,24 @@ def settings_window():
 		global base_path2
 		ebase2_path['state'] = tk.NORMAL
 		base_path2 = filedialog.askopenfilename()
-		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?', parent=window_for_settings)
+		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?',
+		                                parent=window_for_settings)
 		if ask_or:
 			write_settings_csv(base_path2, row_number=2)
 			ebase2_path.delete(0, tk.END)
 			ebase2_path.insert(0, base_path2)
 			ebase2_path['state'] = tk.DISABLED
+
 	def change_head_of_department():
 		global head_of_department
-		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?', parent=window_for_settings)
+		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?',
+		                                parent=window_for_settings)
 		if ask_or:
 			write_settings_csv(head_of_label_entry.get(), row_number=3)
 			head_of_department = read_csv_one_string(filename='datas/settings.csv')[3]
 			head_of_label.config(text=head_of_department)
 			head_of_label_entry.delete(0, tk.END)
+
 	def scaling_option(scaling_number):
 		win.tk.call('tk', 'scaling', scaling_number)
 		write_settings_csv(value=scaling_number, row_number=0)
@@ -144,16 +160,76 @@ def settings_window():
 			python = sys.executable
 			os.execl(python, python, *sys.argv)
 
+	def indicator_to_det_nd():
+
+		def choose_det_nd(evt):
+			textbox_det_nd.delete(0.0, tk.END)
+			w = evt.widget
+			value = w.get(int(w.curselection()[0]))
+			textbox_det_nd.insert(tk.INSERT, dict_data_set[value])
+			b1_delete_indicator.grid(row=1, column=8, columnspan=4, stick='w')
+
+		def add_indicator():
+			new_indicator = b0_entry_add_indicator.get()
+			if new_indicator not in list(dict_data_set.keys()):
+				dict_data_set[new_indicator] = ''
+				indicators_list.insert(0, new_indicator)
+				b0_entry_add_indicator.delete(0, tk.END)
+				write_dict_to_list(dict_for_func=dict_data_set)
+			else:
+				messagebox.showerror('Ошибка', 'Этот индикатор уже есть в словаре', parent=window_for_code_to_nd)
+
+		def del_indicator():
+			selection = indicators_list.curselection()
+			value = indicators_list.get(int(selection[0]))
+			del dict_data_set[value]
+			indicators_list.delete(selection[0])
+			write_dict_to_list(dict_for_func=dict_data_set)
+
+		def confirm_code_det_nd_changes():
+			selection = indicators_list.curselection()
+			value = indicators_list.get(int(indicators_list.curselection()[0]))
+			dict_data_set[value] = textbox_det_nd.get('1.0', 'end-1c')
+			write_dict_to_list(dict_for_func=dict_data_set)
+
+		window_for_code_to_nd = tk.Toplevel(window_for_settings)  # нельзя нажимать в других окнах
+		window_for_code_to_nd.title('Словарик кодов')
+		window_for_code_to_nd.geometry(f'{int(875 * scaling)}x{int(325.0 * scaling)}+1000+350')
+		window_for_code_to_nd.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+
+		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
+		indicator_list_var = tk.Variable(value=sorted(dict_data_set.keys()))
+		indicators_list = tk.Listbox(window_for_code_to_nd, listvariable=indicator_list_var, exportselection=False)
+		indicators_list.grid(row=0, column=0, columnspan=12, padx=42)
+		indicators_list['width'] = 75  # надо будет по максимально фильтровать
+		indicators_list.bind('<<ListboxSelect>>', choose_det_nd)
+
+		textbox_det_nd = tk.Text(window_for_code_to_nd, width=75, height=26)
+		textbox_det_nd.grid(row=0, column=12)
+
+		b0_entry_add_indicator = tk.Entry(window_for_code_to_nd, width=50, justify=tk.LEFT)
+		b0_entry_add_indicator.grid(row=1, column=0, columnspan=4, stick='w', padx=0)
+
+		b0_add_indicator = tk.Button(window_for_code_to_nd, text='Добавить показатель', command=add_indicator)
+		b0_add_indicator.grid(row=1, column=4, columnspan=4, stick='w', padx=0)
+
+		b1_delete_indicator = tk.Button(window_for_code_to_nd, text='Удалить показатель', command=del_indicator)
+
+		b2_show_txt = tk.Button(window_for_code_to_nd, text='Принять изменения', font=('Arial', '12'),
+		                        command=confirm_code_det_nd_changes)
+		b2_show_txt.grid(row=1, column=12, stick='e')
+
 	window_for_settings = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	window_for_settings.title('Настройки')
-	window_for_settings.geometry(f'{int(430 * scaling)}x{int(260.0 * scaling)}+1000+350')
+	window_for_settings.geometry(f'{int(430 * scaling)}x{int(325.0 * scaling)}+1000+350')
 	window_for_settings.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
 	tk.Label(window_for_settings, text='Введите коэффициент масштабирования').grid(row=0, column=0)
 	tk.Label(window_for_settings, text=f'Текущий значение - {scaling}').grid(row=1, column=0)
 	scaling_entry = tk.Entry(window_for_settings)
 	scaling_entry.grid(row=2, column=0)
-	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).grid(row=3, column=0)
+	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).grid(
+		row=3, column=0)
 
 	tk.Label(window_for_settings, text='Выбери файл прободготовки для выгрузки в базу').grid(row=4, column=0)
 	ebase1_path = tk.Entry(window_for_settings, justify=tk.CENTER, font=('Arial', 10), width=80)
@@ -168,7 +244,8 @@ def settings_window():
 	ebase2_path.insert(0, base_path2)
 	ebase2_path['state'] = tk.DISABLED
 	ebase2_path.grid(row=8, column=0)
-	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_2).grid(row=9, column=0)
+	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_2).grid(row=9,
+	                                                                                                          column=0)
 
 	tk.Label(window_for_settings, text='Заведующий паразитологической лабораторией').grid(row=10, column=0)
 	head_of_label = tk.Label(window_for_settings, text=head_of_department)
@@ -176,6 +253,10 @@ def settings_window():
 	head_of_label_entry = tk.Entry(window_for_settings)
 	head_of_label_entry.grid(row=12, column=0)
 	tk.Button(window_for_settings, text='Применить', command=change_head_of_department).grid(row=13, column=0)
+
+	tk.Button(window_for_settings, text='Открыть словарик показатель - код', font=('Arial', '12'),
+	          command=indicator_to_det_nd).grid(row=14, column=0, pady=20)
+
 
 scaling = float(read_csv_one_string('datas/settings.csv')[0])
 head_of_department = read_csv_one_string('datas/settings.csv')[3]
@@ -235,8 +316,8 @@ def get_info():
 	print('_________________________________________________')
 
 
-def write_history(new_csv, type_data='list', type_record='a'):
-	with open('datas/query_history.csv', type_record, newline='', encoding='utf-8') as f:
+def write_history(new_csv, type_data='list', type_record='a', filename='datas/query_history.csv'):
+	with open(file=filename, mode=type_record, newline='', encoding='utf-8') as f:
 		if type_data == 'list':
 			for row in new_csv:
 				writer = csv.writer(f, delimiter='&')
@@ -429,7 +510,7 @@ def get_file_2():
 
 
 def repeat_for_nd():
-	det_nd_research1(0, tk.END)
+	det_nd_research.delete(0, tk.END)
 	if repeat_for_nd_value.get() == 'Yes':
 		det_nd_research.insert(0, det_nd_prep_sample.get())
 
@@ -656,6 +737,7 @@ def word_func(dict_for_word, history_window_0):
 	dict_first_item = next(iter(dict_for_word.values()))
 	executor = dict_first_item[9]
 	sample_name = dict_first_item[1]
+	refactor_nd_codes = read_csv_to_dict()
 	try:
 		sample_name_code = sample_name.split('-')
 		if len(sample_name_code) > 3:
