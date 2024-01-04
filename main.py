@@ -773,20 +773,36 @@ def dict_from_csv():
 def word_func(dict_for_word, history_window_0):
 	def add_entry_to_code(index):
 		nonlocal index_entry
+		index_entry += 1
+		index = index_entry
 		dict_of_entry_buttons[index_entry].append(tk.Entry(add_to_dict_window, width=50))
 		dict_of_entry_buttons[index_entry].append(tk.Entry(add_to_dict_window, width=50))
 		dict_of_entry_buttons[index_entry][0].grid(row=index, column=1, padx=5)
 		dict_of_entry_buttons[index_entry][1].grid(row=index, column=2)
-		index_entry += 1
+
+	def delete_entry_to_code(index):
+		nonlocal index_entry
+		dict_of_entry_buttons[index_entry][0].destroy()
+		dict_of_entry_buttons[index_entry][1].destroy()
+		del dict_of_entry_buttons[index_entry]
+		index_entry -= 1
 
 	def func_add_to_dict(entry_dict, nd_dict):
 		previous_dict = read_csv_to_dict()
 		for values in entry_dict.values():
 			code = values[0].get()
 			name = values[1].get()
+			if code == '':
+				messagebox.showerror('Ошибка', 'Поле кода пустое', parent=add_to_dict_window)
+				return
 			if code not in previous_dict:
-				previous_dict[code] = name
-				nd_dict[code] = name
+				if name == '':
+					messagebox.showerror('Ошибка', f'Код {code} отстутствует в базе данных и поля показателя пустое. Введите пожалуйста показатель.', parent=add_to_dict_window)
+					return
+				else:
+					previous_dict[code] = name
+					nd_dict[code] = name
+
 			else:
 				ask_or = messagebox.askokcancel('Предупреждение',
 				                                f'Предыдущим значением для {code.upper()} являлось {previous_dict[code].upper()}, использовать сохраненный вариант? Отмена приведет к использованию  - нового варианта {name}',
@@ -797,7 +813,6 @@ def word_func(dict_for_word, history_window_0):
 				else:
 					nd_dict[code] = previous_dict[code]
 		write_dict_to_list(previous_dict)
-
 		var_to_sleep.set(1)
 
 	dict_first_item = next(iter(dict_for_word.values()))
@@ -917,18 +932,21 @@ def word_func(dict_for_word, history_window_0):
 	dict_of_entry_buttons = defaultdict(list)
 	dict_of_entry_buttons[2] = [tk.Entry(add_to_dict_window, width=50), tk.Entry(add_to_dict_window, width=50)]
 
-	index_entry = 3
+	index_entry = 2
 	add_b0 = tk.Button(add_to_dict_window, text='Добавить поле для кода-показателя',
 	                   command=lambda: add_entry_to_code(index=index_entry))
 	add_b0.grid(row=0, column=1, stick='nw')
+	add_b0 = tk.Button(add_to_dict_window, text='Удалить поле для кода-показателя',
+	                   command=lambda: delete_entry_to_code(index=index_entry))
+	add_b0.grid(row=0, column=2, stick='nw')
 
 	add_l0 = tk.Label(add_to_dict_window, text='Код', justify=tk.CENTER)
 	add_l0.grid(row=1, column=1)
 	add_l1 = tk.Label(add_to_dict_window, text='Показатель', justify=tk.CENTER)
 	add_l1.grid(row=1, column=2)
 
-	dict_of_entry_buttons[2][0].grid(row=2, column=1, padx=5)
-	dict_of_entry_buttons[2][1].grid(row=2, column=2, padx=5)
+	dict_of_entry_buttons[index_entry][0].grid(row=index_entry, column=1, padx=5)
+	dict_of_entry_buttons[index_entry][1].grid(row=index_entry, column=2, padx=5)
 
 	nd_dict = {}
 	add_b1 = tk.Button(add_to_dict_window, text='Применить коды',
@@ -936,8 +954,6 @@ def word_func(dict_for_word, history_window_0):
 	add_b1.grid(row=10, column=0)
 
 	add_to_dict_window.wait_variable(var_to_sleep)
-
-	print(nd_dict)
 
 	###########################################
 	indexes_nd_samples = len(dict_for_word)
