@@ -23,6 +23,7 @@ import os
 
 path_1 = ''
 path_2 = ''
+sleep_x = 0
 
 
 @staticmethod
@@ -77,6 +78,8 @@ def write_dict_to_list(dict_for_func, filename='datas/indicators_to_code.csv', t
 			writer = csv.writer(f, delimiter='&')
 			writer.writerow(row)
 		f.close()
+
+
 def read_csv_to_dict(filename='datas/indicators_to_code.csv'):
 	csv_to_dict = {}
 	with open(file=filename, newline='', encoding='utf-8') as f:
@@ -85,6 +88,7 @@ def read_csv_to_dict(filename='datas/indicators_to_code.csv'):
 			csv_to_dict[row[0]] = row[1]
 		f.close()
 	return csv_to_dict
+
 
 try:
 	if read_csv_one_string(filename='datas/settings.csv')[1] == '':
@@ -162,14 +166,16 @@ def settings_window():
 
 	def indicator_to_det_nd():
 		list_of_value = []
+
 		def choose_det_nd(evt):
 			try:
 				if dict_data_set[list_of_value[-1]] != textbox_det_nd.get('1.0', 'end-1c'):
-					ask_or = messagebox.askokcancel('Действие', 'Принять изменения или отменить?', parent=window_for_code_to_nd)
+					ask_or = messagebox.askokcancel('Действие', 'Принять изменения или отменить?',
+					                                parent=window_for_code_to_nd)
 					if ask_or:
 						dict_data_set[list_of_value[-1]] = textbox_det_nd.get('1.0', 'end-1c')
 						write_dict_to_list(dict_for_func=dict_data_set)
-			except IndexError:
+			except (IndexError, KeyError):
 				pass
 			textbox_det_nd.delete(0.0, tk.END)
 			w = evt.widget
@@ -204,22 +210,29 @@ def settings_window():
 			value = indicators_list.get(int(indicators_list.curselection()[0]))
 			dict_data_set[value] = textbox_det_nd.get('1.0', 'end-1c')
 			write_dict_to_list(dict_for_func=dict_data_set)
+
 		def close_window():
 			try:
 				if dict_data_set[list_of_value[-1]] != textbox_det_nd.get('1.0', 'end-1c'):
-					ask_or = messagebox.askokcancel('Действие', 'Обнаружено несохраненное изменение в последней записи. Принять ее изменения?',
+					ask_or = messagebox.askokcancel('Действие',
+					                                'Обнаружено несохраненное изменение в последней записи. Принять ее изменения?',
 					                                parent=window_for_code_to_nd)
 					if ask_or:
 						dict_data_set[list_of_value[-1]] = textbox_det_nd.get('1.0', 'end-1c')
 						write_dict_to_list(dict_for_func=dict_data_set)
 			except IndexError:
 				pass
+			except KeyError:
+				write_dict_to_list(dict_for_func=dict_data_set)
 			window_for_code_to_nd.destroy()
 
 		window_for_code_to_nd = tk.Toplevel(window_for_settings)  # нельзя нажимать в других окнах
 		window_for_code_to_nd.title('Словарик кодов')
 		window_for_code_to_nd.geometry(f'{int(875 * scaling)}x{int(325.0 * scaling)}+1000+350')
 		window_for_code_to_nd.protocol('WM_DELETE_WINDOW', close_window)  # закрытие приложения
+
+		window_for_code_to_nd.bind("<Control-KeyPress>", keypress)
+		window_for_code_to_nd.bind_all("<Control-KeyPress>", _copy)
 
 		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
 		indicator_list_var = tk.Variable(value=sorted(dict_data_set.keys()))
@@ -228,7 +241,7 @@ def settings_window():
 		indicators_list['width'] = 75  # надо будет по максимально фильтровать
 		indicators_list.bind('<<ListboxSelect>>', choose_det_nd)
 
-		textbox_det_nd = tk.Text(window_for_code_to_nd, width=75, height=26)
+		textbox_det_nd = tk.Text(window_for_code_to_nd, wrap=tk.WORD, width=75, height=26)
 		textbox_det_nd.grid(row=0, column=12)
 
 		b0_entry_add_indicator = tk.Entry(window_for_code_to_nd, width=50, justify=tk.LEFT)
@@ -278,7 +291,7 @@ def settings_window():
 	head_of_label_entry.grid(row=12, column=0)
 	tk.Button(window_for_settings, text='Применить', command=change_head_of_department).grid(row=13, column=0)
 
-	tk.Button(window_for_settings, text='Открыть словарик показатель - код', font=('Arial', '12'),
+	tk.Button(window_for_settings, text='Открыть словарик код-показатель', font=('Arial', '12'),
 	          command=indicator_to_det_nd).grid(row=14, column=0, pady=20)
 
 
@@ -758,9 +771,49 @@ def dict_from_csv():
 
 
 def word_func(dict_for_word, history_window_0):
+	def func_add_to_dict(name):
+		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
+		dict_data_set[name] = add_e0.get()
+		write_dict_to_list(dict_for_func=dict_data_set)
+		var_to_sleep.set(1)
+
 	dict_first_item = next(iter(dict_for_word.values()))
 	executor = dict_first_item[9]
 	sample_name = dict_first_item[1]
+	nd_details = list(set([dict_first_item[7], dict_first_item[8]]))
+
+	symb_list = []
+	for row in nd_details:
+		var_last_symb = ''
+		var_symb = ''
+		counter = 0
+		counter_2 = 0
+		for index, _ in enumerate(row):
+			var_last_symb = _
+			if re.search(r'[^А-Я\s]', var_symb) and re.match(r'[А-Я]', _):
+				symb_list.append(var_symb.strip())
+				var_symb = _
+			elif re.match(r'[А-Я\s]', _):
+				if var_symb == '' and re.match(r'\s', _):
+					continue
+				elif re.match(r'[А-Я]', _) and var_symb == '':
+					if counter_2 != 0:
+						counter_2 = 0
+						symb_list.append(var_symb.strip())
+					var_symb = _
+				else:
+					if var_symb != '':
+						var_symb += _
+					else:
+						var_symb = _
+			else:
+				counter_2 += 1
+				counter += 1
+				var_symb += _
+			if index == len(row) - 1:
+				symb_list.append(var_symb.strip())
+	symb_list = [re.sub(r'^(.*),$', r'\1', row) for row in symb_list]
+	symb_list = [re.sub(r'^(.*)\.$', r'\1', row) for row in symb_list]
 	refactor_nd_codes = read_csv_to_dict()
 	try:
 		sample_name_code = sample_name.split('-')
@@ -778,15 +831,41 @@ def word_func(dict_for_word, history_window_0):
 	else:
 		indicator_names = indicator_names.replace(' обнаружены', '')
 	indicator_names = indicator_names.split(', ')
+
 	nd_dict = {}
-	for name in indicator_names:
+	for index, code in enumerate(list(set(symb_list))):
 		try:
-			nd_dict[name] = refactor_nd_codes[name]
+			nd_dict[code] = refactor_nd_codes[code]
 		except KeyError:
-			nd_dict[name] = 'нужен код'
+			add_to_dict_window = tk.Toplevel(history_window_0)  # нельзя нажимать в других окнах
+			add_to_dict_window.title(f'Добавление {index+1} кода из {len(list(set(symb_list)))}')
+			add_to_dict_window.geometry(f'{int(550 * scaling)}x{int(325.0 * scaling)}+1000+350')
+			add_to_dict_window.protocol('WM_DELETE_WINDOW')
+
+			add_to_dict_window.bind("<Control-KeyPress>", keypress)
+			add_to_dict_window.bind_all("<Control-KeyPress>", _copy)
+
+			tk.Label(add_to_dict_window,
+			         text=f'В базе данных для {code.upper()} не был обнаружен показатель. Введите показатель.').grid(row=0, column=0,
+			                                                                                           columnspan=50)
+			add_e0 = tk.Entry(add_to_dict_window, justify=tk.LEFT, width=50)
+			add_e0.grid(row=1, column=0, stick='w')
+			add_b0 = tk.Button(add_to_dict_window, text='Добавить', command=lambda: func_add_to_dict(code))
+			add_b0.grid(row=1, column=1, stick='w')
+			add_t0 = tk.Text(add_to_dict_window, width=100, wrap=tk.WORD)
+			add_t0.insert(tk.INSERT, 'Показатели из записи:\n\n')
+			add_t0.insert(tk.INSERT, dict_first_item[6])
+			add_t0['state'] = tk.DISABLED
+			add_t0.grid(row=2, column=0, columnspan=50, pady=10)
+			var_to_sleep = tk.IntVar()
+			var_to_sleep.set(0)
+			add_to_dict_window.wait_variable(var_to_sleep)
+			nd_dict[code] = add_e0.get()
+			add_to_dict_window.destroy()
 
 	indexes_nd_samples = len(dict_for_word)
-	list_samples = len(indicator_names)
+	# list_samples = len(indicator_names)
+	list_samples = len(nd_dict)
 	print(indexes_nd_samples, list_samples)
 	doc = docx.Document('docs/template.docx')
 
@@ -833,12 +912,11 @@ def word_func(dict_for_word, history_window_0):
 			cell_1_0.text = fullname
 			format_for_cell(cell_1_0, bold=True)
 
-		def ls_indicators_frame(i, nd_cell_name, nd_cell_result, nd_cell_code):
+		def ls_indicators_frame(i, nd_cell_code, nd_cell_result, nd_cell_name):
 			table.rows[i].height = Cm(1.62)
 			cell_2_0 = table.cell(i, 0)
 			cell_2_0.text = nd_cell_name.capitalize()
 			format_for_cell(cell_2_0, align_p=WD_ALIGN_PARAGRAPH.LEFT, align_v=WD_ALIGN_VERTICAL.CENTER)
-
 			cell_2_1 = table.cell(i, 1)
 			cell_2_1.text = nd_cell_result.capitalize()
 			format_for_cell(cell_2_1, align_p=WD_ALIGN_PARAGRAPH.CENTER, align_v=WD_ALIGN_VERTICAL.CENTER)
@@ -858,8 +936,9 @@ def word_func(dict_for_word, history_window_0):
 				indicator_result = 'Обнаружено'
 			nd_samples_frame(i, fullname=sample_fullname)
 			i += 1
-			for dict_name, code in nd_dict.items():
-				ls_indicators_frame(i, nd_cell_name=dict_name, nd_cell_code=code, nd_cell_result=indicator_result)
+			nd_dict_sorted = {k: v for k, v in sorted(nd_dict.items(), key=lambda item: item[1])}
+			for dict_code, name in nd_dict_sorted.items():
+				ls_indicators_frame(i, nd_cell_code=dict_code, nd_cell_name=name, nd_cell_result=indicator_result)
 				i += 1
 
 		doc.add_paragraph('')
@@ -1075,7 +1154,7 @@ def history_window():
 	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
 	l1.bind('<<ListboxSelect>>', choose_code_l1)
 
-	t0 = tk.Text(history_window_0, width=100, height=26, font=('Calibri', '10'), state=tk.DISABLED)
+	t0 = tk.Text(history_window_0, width=100, height=26, font=('Calibri', '10'), wrap=tk.WORD, state=tk.DISABLED)
 
 	b0 = tk.Button(history_window_0, text='Сгенерировать ворд', font=('Arial', '10'), command=func_for_window)
 	b0.grid(row=1, column=0)
@@ -1591,11 +1670,11 @@ def refresh_changes():
 		l0.grid(row=0, column=0, stick='e')
 		l0.bind('<<ListboxSelect>>', choose_changes)
 
-		t0 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+		t0 = tk.Text(refresh_changes_window, width=100, wrap=tk.WORD, state=tk.DISABLED)
 		t0.tag_configure("before", foreground="red", background='#FFFFDA')
 		t0.grid(row=0, column=1, padx=5)
 
-		t1 = tk.Text(refresh_changes_window, width=100, state=tk.DISABLED)
+		t1 = tk.Text(refresh_changes_window, width=100, wrap=tk.WORD, state=tk.DISABLED)
 		t1.tag_configure("after", foreground="green", background='#FFFFDA')
 		t1.grid(row=0, column=2, padx=5)
 
