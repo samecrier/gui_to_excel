@@ -771,10 +771,33 @@ def dict_from_csv():
 
 
 def word_func(dict_for_word, history_window_0):
-	def func_add_to_dict(name):
-		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
-		dict_data_set[name] = add_e0.get()
-		write_dict_to_list(dict_for_func=dict_data_set)
+	def add_entry_to_code(index):
+		nonlocal index_entry
+		dict_of_entry_buttons[index_entry].append(tk.Entry(add_to_dict_window, width=50))
+		dict_of_entry_buttons[index_entry].append(tk.Entry(add_to_dict_window, width=50))
+		dict_of_entry_buttons[index_entry][0].grid(row=index, column=1, padx=5)
+		dict_of_entry_buttons[index_entry][1].grid(row=index, column=2)
+		index_entry += 1
+
+	def func_add_to_dict(entry_dict, nd_dict):
+		previous_dict = read_csv_to_dict()
+		for values in entry_dict.values():
+			code = values[0].get()
+			name = values[1].get()
+			if code not in previous_dict:
+				previous_dict[code] = name
+				nd_dict[code] = name
+			else:
+				ask_or = messagebox.askokcancel('Предупреждение',
+				                                f'Предыдущим значением для {code.upper()} являлось {previous_dict[code].upper()}, использовать сохраненный вариант? Отмена приведет к использованию  - нового варианта {name}',
+				                                parent=add_to_dict_window)
+				if ask_or == False:
+					previous_dict[code] = name
+					nd_dict[code] = name
+				else:
+					nd_dict[code] = previous_dict[code]
+		write_dict_to_list(previous_dict)
+
 		var_to_sleep.set(1)
 
 	dict_first_item = next(iter(dict_for_word.values()))
@@ -784,6 +807,7 @@ def word_func(dict_for_word, history_window_0):
 
 	symb_list = []
 	for row in nd_details:
+		row = re.sub(r'П\.', r'п.', row)
 		var_last_symb = ''
 		var_symb = ''
 		counter = 0
@@ -833,36 +857,89 @@ def word_func(dict_for_word, history_window_0):
 	indicator_names = indicator_names.split(', ')
 
 	nd_dict = {}
-	for index, code in enumerate(list(set(symb_list))):
-		try:
-			nd_dict[code] = refactor_nd_codes[code]
-		except KeyError:
-			add_to_dict_window = tk.Toplevel(history_window_0)  # нельзя нажимать в других окнах
-			add_to_dict_window.title(f'Добавление {index+1} кода из {len(list(set(symb_list)))}')
-			add_to_dict_window.geometry(f'{int(550 * scaling)}x{int(325.0 * scaling)}+1000+350')
-			add_to_dict_window.protocol('WM_DELETE_WINDOW')
 
-			add_to_dict_window.bind("<Control-KeyPress>", keypress)
-			add_to_dict_window.bind_all("<Control-KeyPress>", _copy)
+	#####АВТОМАТИЗИРОВАННЫЙ ВАРИАНТ ВЫБОРА КОДОВ - ПОКАЗАТЕЛЕЙ
 
-			tk.Label(add_to_dict_window,
-			         text=f'В базе данных для {code.upper()} не был обнаружен показатель. Введите показатель.').grid(row=0, column=0,
-			                                                                                           columnspan=50)
-			add_e0 = tk.Entry(add_to_dict_window, justify=tk.LEFT, width=50)
-			add_e0.grid(row=1, column=0, stick='w')
-			add_b0 = tk.Button(add_to_dict_window, text='Добавить', command=lambda: func_add_to_dict(code))
-			add_b0.grid(row=1, column=1, stick='w')
-			add_t0 = tk.Text(add_to_dict_window, width=100, wrap=tk.WORD)
-			add_t0.insert(tk.INSERT, 'Показатели из записи:\n\n')
-			add_t0.insert(tk.INSERT, dict_first_item[6])
-			add_t0['state'] = tk.DISABLED
-			add_t0.grid(row=2, column=0, columnspan=50, pady=10)
-			var_to_sleep = tk.IntVar()
-			var_to_sleep.set(0)
-			add_to_dict_window.wait_variable(var_to_sleep)
-			nd_dict[code] = add_e0.get()
-			add_to_dict_window.destroy()
+	# def func_add_to_dict(name):
+	# 	dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
+	# 	dict_data_set[name] = add_e0.get()
+	# 	write_dict_to_list(dict_for_func=dict_data_set)
+	# 	var_to_sleep.set(1)
 
+	# for index, code in enumerate(list(set(symb_list))):
+	# 	try:
+	# 		nd_dict[code] = refactor_nd_codes[code]
+	# 	except KeyError:
+	# 		add_to_dict_window = tk.Toplevel(history_window_0)  # нельзя нажимать в других окнах
+	# 		add_to_dict_window.title(f'Добавление {index+1} кода из {len(list(set(symb_list)))}')
+	# 		add_to_dict_window.geometry(f'{int(550 * scaling)}x{int(325.0 * scaling)}+1000+350')
+	# 		add_to_dict_window.protocol('WM_DELETE_WINDOW')
+	# 		add_to_dict_window.bind("<Control-KeyPress>", keypress)
+	# 		add_to_dict_window.bind_all("<Control-KeyPress>", _copy)
+	#
+	# 		tk.Label(add_to_dict_window,
+	# 		         text=f'В базе данных для {code.upper()} не был обнаружен показатель. Введите показатель.').grid(row=0, column=0,
+	# 		                                                                                           columnspan=50)
+	# 		add_e0 = tk.Entry(add_to_dict_window, justify=tk.LEFT, width=50)
+	# 		add_e0.grid(row=1, column=0, stick='w')
+	# 		add_b0 = tk.Button(add_to_dict_window, text='Добавить', command=lambda: func_add_to_dict(code))
+	# 		add_b0.grid(row=1, column=1, stick='w')
+	# 		add_t0 = tk.Text(add_to_dict_window, width=100, wrap=tk.WORD)
+	# 		add_t0.insert(tk.INSERT, 'Показатели из записи:\n\n')
+	# 		add_t0.insert(tk.INSERT, dict_first_item[6])
+	# 		add_t0['state'] = tk.DISABLED
+	# 		add_t0.grid(row=2, column=0, columnspan=50, pady=10)
+	# 		var_to_sleep = tk.IntVar()
+	# 		var_to_sleep.set(0)
+	# 		add_to_dict_window.wait_variable(var_to_sleep)
+	# 		nd_dict[code] = add_e0.get()
+	# 		add_to_dict_window.destroy()
+
+	##########РУЧНОЙ ВАРИАНТ ВЫБОРА КОДОВ - ПОКАЗАТЕЛЕЙ
+	add_to_dict_window = tk.Toplevel(history_window_0)  # нельзя нажимать в других окнах
+	add_to_dict_window.title(f'Добавление показателей')
+	add_to_dict_window.geometry(f'{int(850 * scaling)}x{int(325.0 * scaling)}+1000+350')
+	add_to_dict_window.protocol('WM_DELETE_WINDOW')
+	add_to_dict_window.bind("<Control-KeyPress>", keypress)
+	add_to_dict_window.bind_all("<Control-KeyPress>", _copy)
+
+	add_t0 = tk.Text(add_to_dict_window, width=50, wrap=tk.WORD)
+	add_t0.insert(tk.INSERT, 'Показатели из записи:\n\n')
+	add_t0.insert(tk.INSERT, dict_first_item[6] + '\n\n')
+	add_t0.insert(tk.INSERT, 'Код из записи:\n\n')
+	for row in symb_list:
+		add_t0.insert(tk.INSERT, row + '\n')
+	add_t0['state'] = tk.DISABLED
+	add_t0.grid(row=0, rowspan=10, column=0, pady=10)
+	var_to_sleep = tk.IntVar()
+	var_to_sleep.set(0)
+
+	dict_of_entry_buttons = defaultdict(list)
+	dict_of_entry_buttons[2] = [tk.Entry(add_to_dict_window, width=50), tk.Entry(add_to_dict_window, width=50)]
+
+	index_entry = 3
+	add_b0 = tk.Button(add_to_dict_window, text='Добавить поле для кода-показателя',
+	                   command=lambda: add_entry_to_code(index=index_entry))
+	add_b0.grid(row=0, column=1, stick='nw')
+
+	add_l0 = tk.Label(add_to_dict_window, text='Код', justify=tk.CENTER)
+	add_l0.grid(row=1, column=1)
+	add_l1 = tk.Label(add_to_dict_window, text='Показатель', justify=tk.CENTER)
+	add_l1.grid(row=1, column=2)
+
+	dict_of_entry_buttons[2][0].grid(row=2, column=1, padx=5)
+	dict_of_entry_buttons[2][1].grid(row=2, column=2, padx=5)
+
+	nd_dict = {}
+	add_b1 = tk.Button(add_to_dict_window, text='Применить коды',
+	                   command=lambda: func_add_to_dict(dict_of_entry_buttons, nd_dict))
+	add_b1.grid(row=10, column=0)
+
+	add_to_dict_window.wait_variable(var_to_sleep)
+
+	print(nd_dict)
+
+	###########################################
 	indexes_nd_samples = len(dict_for_word)
 	# list_samples = len(indicator_names)
 	list_samples = len(nd_dict)
@@ -996,7 +1073,7 @@ def word_func(dict_for_word, history_window_0):
 
 	print('Word файл сгенерирован')
 	doc.save(f'docs/{sample_name_code}.docx')
-	messagebox.showinfo('Инфо', f'Word файл для {sample_name_code} сгенерирован', parent=history_window_0)
+	messagebox.showinfo('Инфо', f'Word файл для {sample_name_code} сгенерирован', parent=add_to_dict_window)
 
 
 def history_window():
