@@ -161,11 +161,24 @@ def settings_window():
 			os.execl(python, python, *sys.argv)
 
 	def indicator_to_det_nd():
-
+		list_of_value = []
 		def choose_det_nd(evt):
+			try:
+				if dict_data_set[list_of_value[-1]] != textbox_det_nd.get('1.0', 'end-1c'):
+					ask_or = messagebox.askokcancel('Действие', 'Принять изменения или отменить?', parent=window_for_code_to_nd)
+					if ask_or:
+						dict_data_set[list_of_value[-1]] = textbox_det_nd.get('1.0', 'end-1c')
+						write_dict_to_list(dict_for_func=dict_data_set)
+			except IndexError:
+				pass
 			textbox_det_nd.delete(0.0, tk.END)
 			w = evt.widget
 			value = w.get(int(w.curselection()[0]))
+			try:
+				if list_of_value[-1] != value:
+					list_of_value.append(value)
+			except IndexError:
+				list_of_value.append(value)
 			textbox_det_nd.insert(tk.INSERT, dict_data_set[value])
 			b1_delete_indicator.grid(row=1, column=8, columnspan=4, stick='w')
 
@@ -191,11 +204,22 @@ def settings_window():
 			value = indicators_list.get(int(indicators_list.curselection()[0]))
 			dict_data_set[value] = textbox_det_nd.get('1.0', 'end-1c')
 			write_dict_to_list(dict_for_func=dict_data_set)
+		def close_window():
+			try:
+				if dict_data_set[list_of_value[-1]] != textbox_det_nd.get('1.0', 'end-1c'):
+					ask_or = messagebox.askokcancel('Действие', 'Обнаружено несохраненное изменение в последней записи. Принять ее изменения?',
+					                                parent=window_for_code_to_nd)
+					if ask_or:
+						dict_data_set[list_of_value[-1]] = textbox_det_nd.get('1.0', 'end-1c')
+						write_dict_to_list(dict_for_func=dict_data_set)
+			except IndexError:
+				pass
+			window_for_code_to_nd.destroy()
 
 		window_for_code_to_nd = tk.Toplevel(window_for_settings)  # нельзя нажимать в других окнах
 		window_for_code_to_nd.title('Словарик кодов')
 		window_for_code_to_nd.geometry(f'{int(875 * scaling)}x{int(325.0 * scaling)}+1000+350')
-		window_for_code_to_nd.protocol('WM_DELETE_WINDOW')  # закрытие приложения
+		window_for_code_to_nd.protocol('WM_DELETE_WINDOW', close_window)  # закрытие приложения
 
 		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
 		indicator_list_var = tk.Variable(value=sorted(dict_data_set.keys()))
@@ -215,7 +239,7 @@ def settings_window():
 
 		b1_delete_indicator = tk.Button(window_for_code_to_nd, text='Удалить показатель', command=del_indicator)
 
-		b2_show_txt = tk.Button(window_for_code_to_nd, text='Принять изменения', font=('Arial', '12'),
+		b2_show_txt = tk.Button(window_for_code_to_nd, text='Принять изменение', font=('Arial', '12'),
 		                        command=confirm_code_det_nd_changes)
 		b2_show_txt.grid(row=1, column=12, stick='e')
 
