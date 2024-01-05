@@ -797,7 +797,9 @@ def word_func(dict_for_word, history_window_0):
 				return
 			if code not in previous_dict:
 				if name == '':
-					messagebox.showerror('Ошибка', f'Код {code} отстутствует в базе данных и поля показателя пустое. Введите пожалуйста показатель.', parent=add_to_dict_window)
+					messagebox.showerror('Ошибка',
+					                     f'Код {code} отстутствует в базе данных и поля показателя пустое. Введите пожалуйста показатель.',
+					                     parent=add_to_dict_window)
 					return
 				else:
 					previous_dict[code] = name
@@ -1095,7 +1097,7 @@ def word_func(dict_for_word, history_window_0):
 def history_window():
 	history_window_0 = tk.Toplevel(win)  # нельзя нажимать в других окнах
 	history_window_0.title('Окно 1')
-	history_window_0.geometry(f'{int(750.0 * scaling)}x{int(400.0 * scaling)}+1300+350')
+	history_window_0.geometry(f'{int(800.0 * scaling)}x{int(400.0 * scaling)}+1300+350')
 	history_window_0.wm_attributes("-topmost", 0)  # чтобы повешать поверх все окон, но работает и без
 	history_window_0.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
@@ -1175,9 +1177,15 @@ def history_window():
 					t0['state'] = tk.DISABLED
 		write_history(new_csv, type_record='w')
 
+		sel = l0.curselection()
+		val = l0.get(int(l0.curselection()[0]))
+		dict_for_history_set = make_dict_for_history_set()[0]
+		if dict_for_history_set[val] == []:
+			l0.delete(sel[0])
+
 	def choose_code_l1(evt):
 		if t0.grid_info() == {}:
-			t0.grid(row=0, column=2, columnspan=2)
+			t0.grid(row=1, column=3, columnspan=2, stick='ws')
 		t0['state'] = tk.NORMAL
 		t0.delete(0.0, tk.END)
 		w = evt.widget
@@ -1185,24 +1193,69 @@ def history_window():
 		for i, row in enumerate(history_dict[value]):
 			t0.insert(tk.INSERT, infos_for_history[i] + ' - ' + row + '\n')
 		t0['state'] = tk.DISABLED
-		b1.grid(row=1, column=1)
-		b2.grid(row=1, column=2)
-		b3.grid(row=1, column=3)
+		b1.grid(row=2, column=2, stick='w')
+		b2.grid(row=2, column=3, stick='w')
+		b3.grid(row=2, column=4, stick='e')
 
 	def show_codes_l0(evt):
 		sample_codes_code = []
 		w = evt.widget
 		value = w.get(int(w.curselection()[0]))
+		dict_for_history_set = make_dict_for_history_set()[0]
 		for i, row in enumerate(dict_for_history_set[value]):
 			sample_codes_code.append(row)
-
 		list_var_code_from_codes = tk.Variable(value=sample_codes_code)
 		l1['listvariable'] = list_var_code_from_codes
-		l1.grid(row=0, column=1, stick='w')
+		l1.grid(row=1, column=2, stick='ws')
+		l1.selection_clear(0, tk.END)
 		b1.grid_forget()
 		b2.grid_forget()
 		b3.grid_forget()
 		t0.grid_forget()
+
+	def cb_search(event=None):
+		sstr = search_str.get()
+		l0.delete(0, tk.END)
+		# If filter removed show all data
+		if sstr == "":
+			fill_listbox(sample_codes)
+			return
+
+		filtered_data = list()
+		for item in sample_codes:
+			if item.find(sstr) >= 0:
+				filtered_data.append(item)
+
+		fill_listbox(filtered_data)
+
+	def cb_del():
+		search_history.delete(0, tk.END)
+		l0.delete(0, tk.END)
+		fill_listbox(sample_codes)
+
+	def fill_listbox(ld):
+		for item in ld:
+			l0.insert(tk.END, item)
+
+	def make_dict_for_history_set():
+		history_dict = dict_from_csv()
+		history_samples = list(history_dict)[::-1]
+
+		dict_for_history_set = defaultdict(list)
+		for i in history_samples:
+			try:
+				code = i.split('-')
+				if len(code) > 3:
+					code = ('-').join(code[:-1])
+				else:
+					code = i
+			except:
+				code = i
+			dict_for_history_set[code].append(i)
+		for key in dict_for_history_set.keys():
+			if len(dict_for_history_set[key]) > 1:
+				dict_for_history_set[key] = sorted(dict_for_history_set[key], key=lambda y: int(y.split('-')[-1]))
+		return dict_for_history_set, history_dict, history_samples
 
 	infos_for_history = ['Номер лабораторного журнала', 'Регистрационный номер пробы', 'Наименование пробы(образца)',
 	                     'ФИО специалиста ответственного за пробоподготовку', 'Примечания пробоподготовки',
@@ -1214,31 +1267,32 @@ def history_window():
 	                     'Дата окончания пробоподготовки', 'Дата утилизации пробы/сведения о консервации',
 	                     'Дата выписки листа протокола', 'Этапы пробоподготовки', 'Этапы исследования']
 
-	history_dict = dict_from_csv()
-	history_samples = list(history_dict)[::-1]
-
-	dict_for_history_set = defaultdict(list)
-	for i in history_samples:
-		try:
-			code = i.split('-')
-			if len(code) > 3:
-				code = ('-').join(code[:-1])
-			else:
-				code = i
-		except:
-			code = i
-		dict_for_history_set[code].append(i)
-	for key in dict_for_history_set.keys():
-		if len(dict_for_history_set[key]) > 1:
-			dict_for_history_set[key] = sorted(dict_for_history_set[key], key=lambda y: int(y.split('-')[-1]))
-
+	dict_for_history_set, history_dict, history_samples = make_dict_for_history_set()
 	sample_codes = [key for key in dict_for_history_set]
 
-	list_var_codes = tk.Variable(value=sample_codes)
-	l0 = tk.Listbox(history_window_0, height=25, font=('Calibri', '10'), listvariable=list_var_codes,
-	                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
-	l0.grid(row=0, column=0, stick='e')
+	history_listbox_frame = tk.Frame(history_window_0)
+
+	search_str = tk.StringVar()
+	search_history = tk.Entry(history_listbox_frame, textvariable=search_str, justify=tk.LEFT, width=20)
+	search_history.grid(row=0, column=0, columnspan=7, stick='w', pady=5)
+	search_history.bind('<Return>', cb_search)
+	b_search_confirm = tk.Button(history_listbox_frame, text='Поиск', command=cb_search)
+	b_search_confirm.grid(row=0, column=7, columnspan=2, stick='w', pady=5)
+	b_search_delete = tk.Button(history_listbox_frame, text='Удалить', command=cb_del)
+	b_search_delete.grid(row=0, column=9, columnspan=2, stick='w', pady=5)
+
+	l0_scroll = tk.Scrollbar(history_listbox_frame, orient='vertical')
+	# list_var_codes = tk.Variable(value=sample_codes)
+	l0 = tk.Listbox(history_listbox_frame, height=25, font=('Calibri', '10'),
+	                exportselection=False, yscrollcommand=l0_scroll.set) # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второг
+	fill_listbox(sample_codes)
+	l0_scroll.config(command=l0.yview)
+	history_listbox_frame.grid(row=1, column=0, stick='w')
+	l0_scroll.grid(row=1, column=0, stick='nsw')
+	l0.grid(row=1, column=1, columnspan=10, stick='we')
 	l0.bind('<<ListboxSelect>>', show_codes_l0)
+
+
 	# exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
 
 	sample_codes_code = []
@@ -1250,7 +1304,7 @@ def history_window():
 	t0 = tk.Text(history_window_0, width=100, height=26, font=('Calibri', '10'), wrap=tk.WORD, state=tk.DISABLED)
 
 	b0 = tk.Button(history_window_0, text='Сгенерировать ворд', font=('Arial', '10'), command=func_for_window)
-	b0.grid(row=1, column=0)
+	b0.grid(row=2, column=0, columnspan=2, stick='we')
 	b1 = tk.Button(history_window_0, text='Удалить запись', font=('Arial', '10'), command=delete_from_csv)
 	b2 = tk.Button(history_window_0, text='Заполнить только пустые', font=('Arial', '10'),
 	               command=confirm_empty_to_main)
@@ -1754,35 +1808,41 @@ def refresh_changes():
 	else:
 		refresh_changes_window = tk.Toplevel(win)
 		refresh_changes_window.title('1 меню изменений')
-		refresh_changes_window.geometry(f'{int(1200.0 * scaling)}x{int(500.0 * scaling)}+1200+400')
+		refresh_changes_window.geometry(f'{int(1225.0 * scaling)}x{int(500.0 * scaling)}+1200+400')
 		refresh_changes_window.protocol('WM_DELETE_WINDOW')  # закрытие приложения
 
+		changes_frame = tk.Frame(refresh_changes_window)
+		l0_scroll = tk.Scrollbar(changes_frame, orient='vertical')
 		list_var_changes = tk.Variable(value=query_history_changes)
-		l0 = tk.Listbox(refresh_changes_window, listvariable=list_var_changes,
-		                exportselection=False)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
-		l0.grid(row=0, column=0, stick='e')
+		l0 = tk.Listbox(changes_frame, height=19, listvariable=list_var_changes,
+		                exportselection=False, yscrollcommand=l0_scroll.set)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+
+		l0_scroll.config(command=l0.yview)
+		changes_frame.grid(row=0, column=0, stick='e')
+		l0_scroll.grid(row=0, column=0, stick='ens')
+		l0.grid(row=0, column=1, stick='w')
 		l0.bind('<<ListboxSelect>>', choose_changes)
 
 		t0 = tk.Text(refresh_changes_window, width=100, wrap=tk.WORD, state=tk.DISABLED)
 		t0.tag_configure("before", foreground="red", background='#FFFFDA')
-		t0.grid(row=0, column=1, padx=5)
+		t0.grid(row=0, column=2, padx=5)
 
 		t1 = tk.Text(refresh_changes_window, width=100, wrap=tk.WORD, state=tk.DISABLED)
 		t1.tag_configure("after", foreground="green", background='#FFFFDA')
-		t1.grid(row=0, column=2, padx=5)
+		t1.grid(row=0, column=3, padx=5)
 
 		tk.Button(refresh_changes_window, text='Отменить изменения', command=close_refresh_changes_window).grid(
-			row=1, column=0, stick='w')
+			row=1, column=0, columnspan=2, stick='we')
 
 		if len(query_history_changes) <= 600:
 			tk.Button(refresh_changes_window, text='Выбрать изменения', command=choose_changes_checkbox_menu).grid(
-				row=1, column=1, stick='w')
+				row=1, column=2, stick='w', padx=5)
 		else:
 			tk.Button(refresh_changes_window, text='Выбрать изменения', command=too_much_changes).grid(
-				row=1, column=1, stick='w')
+				row=1, column=2, stick='w', padx=5)
 
 		tk.Button(refresh_changes_window, text='Принять все изменения', command=confirm_all_changes).grid(
-			row=1, column=2, stick='w')
+			row=1, column=3, stick='w', padx=5)
 
 
 # двойное
