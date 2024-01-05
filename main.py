@@ -91,10 +91,7 @@ def read_csv_to_dict(filename='datas/indicators_to_code.csv'):
 
 
 try:
-	if read_csv_one_string(filename='datas/settings.csv')[1] == '':
-		base_path1 = 'docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx'
-	else:
-		base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
+	base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
 except FileNotFoundError:
 	with open('datas/settings.csv', 'w', newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter=';')
@@ -104,19 +101,10 @@ except FileNotFoundError:
 			'',
 			'Кулемин И.А.'
 		])
-	if read_csv_one_string(filename='datas/settings.csv')[1] == '':
-		base_path1 = 'docs/Журнал_пробоподготовки,_исследования_проб_образцов_и_регистрации.xlsx'
-	else:
-		base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
-	if read_csv_one_string(filename='datas/settings.csv')[2] == '':
-		base_path2 = 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
-	else:
-		base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
+		base_path1 = ''
+		base_path2 = ''
 else:
-	if read_csv_one_string(filename='datas/settings.csv')[2] == '':
-		base_path2 = 'docs/Журнал_регистрации_проб_паразитологической_лаборатории_2023.xlsx'
-	else:
-		base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
+	base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
 
 
 def settings_window():
@@ -155,11 +143,20 @@ def settings_window():
 			head_of_label_entry.delete(0, tk.END)
 
 	def scaling_option(scaling_number):
+		if scaling_number == '':
+			messagebox.showerror('Ошибка', 'Пустое значение', parent=window_for_settings)
+			return
+		try:
+			scaling_number = float(scaling_number)
+		except:
+			messagebox.showerror('Ошибка', 'Неправильный формат введенных данных', parent=window_for_settings)
+			return
 		win.tk.call('tk', 'scaling', scaling_number)
 		write_settings_csv(value=scaling_number, row_number=0)
 		check_scaling_messagebox = messagebox.askokcancel('Предупреждение',
-		                                                  'Чтобы применение вступило в силу необходимо перезагрузить приложение. Нажмите ОК если хотите перезагрузить приложение сейчас (введенные данные будут утеряны). Нажмите Отмена, если хотите самостоятельно перезагрузить приложение.',
+		                                                  'Чтобы применение вступило в силу необходимо перезагрузить приложение. Нажмите ОК если хотите перезагрузить приложение сейчас (текущие введенные данные будут утеряны).',
 		                                                  parent=window_for_settings)
+		print('тут')
 		if check_scaling_messagebox:
 			python = sys.executable
 			os.execl(python, python, *sys.argv)
@@ -238,13 +235,13 @@ def settings_window():
 		indicator_list_var = tk.Variable(value=sorted(dict_data_set.keys()))
 		indicators_list = tk.Listbox(window_for_code_to_nd, listvariable=indicator_list_var, exportselection=False)
 		indicators_list.grid(row=0, column=0, columnspan=12, padx=42)
-		indicators_list['width'] = 75  # надо будет по максимально фильтровать
+		indicators_list['width'] = 67  # надо будет по максимально фильтровать
 		indicators_list.bind('<<ListboxSelect>>', choose_det_nd)
 
 		textbox_det_nd = tk.Text(window_for_code_to_nd, wrap=tk.WORD, width=75, height=26)
 		textbox_det_nd.grid(row=0, column=12)
 
-		b0_entry_add_indicator = tk.Entry(window_for_code_to_nd, width=50, justify=tk.LEFT)
+		b0_entry_add_indicator = tk.Entry(window_for_code_to_nd, width=40, justify=tk.LEFT)
 		b0_entry_add_indicator.grid(row=1, column=0, columnspan=4, stick='w', padx=0)
 
 		b0_add_indicator = tk.Button(window_for_code_to_nd, text='Добавить показатель', command=add_indicator)
@@ -265,7 +262,7 @@ def settings_window():
 	tk.Label(window_for_settings, text=f'Текущий значение - {scaling}').grid(row=1, column=0)
 	scaling_entry = tk.Entry(window_for_settings)
 	scaling_entry.grid(row=2, column=0)
-	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(float(scaling_entry.get()))).grid(
+	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(scaling_entry.get())).grid(
 		row=3, column=0)
 
 	tk.Label(window_for_settings, text='Выбери файл прободготовки для выгрузки в базу').grid(row=4, column=0)
@@ -314,7 +311,7 @@ def _copy(event):
 windll.shcore.SetProcessDpiAwareness(1)
 win.tk.call('tk', 'scaling', scaling)
 # отменить скейлинг
-win.geometry(f'{int(800.0 * scaling)}x{int(550.0 * scaling)}+50+50')
+win.geometry(f'{int(800.0 * scaling)}x{int(550.0 * scaling)}+1000+150')
 win.title('Программа')
 win.event_delete('<<Paste>>', '<Control-V>')
 win.event_delete('<<Copy>>', '<Control-C>')
@@ -366,6 +363,8 @@ def write_history(new_csv, type_data='list', type_record='a', filename='datas/qu
 
 
 def excel_func():
+	global base_path1, base_path2
+
 	# try:
 	def styled_cells(data, sheet):
 		if len(data) == 15:
@@ -408,6 +407,15 @@ def excel_func():
 	if rg_nb_sample.get() == '':
 		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
 		return
+	if nb_lab_journal.get() == '':
+		messagebox.showerror('Ошибка', 'Введите номер лабораторного журнала')
+		return
+	if ls_indicators.get() == '':
+		messagebox.showerror('Ошибка', 'Введите перечень показателей')
+		return
+	if det_nd_prep_sample.get() == '' and det_nd_research.get() == '':
+		messagebox.showerror('Ошибка', 'Введите реквизиты НД')
+		return
 	dict_keys = []
 	with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter='&')
@@ -430,18 +438,37 @@ def excel_func():
 			return
 
 	if path_1 == '':
-		path_sample_file = 'docs\\test_file_sample.xlsx'
-	else:
-		path_sample_file = path_1
+		if base_path1 == '':
+			messagebox.showerror('Ошибка',
+			                     'Выберите эксель файл или выберите в настройках путь для Excel файла пробоподготовки в настройках.',
+			                     parent=win)
+			return
+		else:
+			path_sample_file = base_path1
 	if path_2 == '':
-		path_register_file = 'docs\\test_file_register.xlsx'
-	else:
-		path_register_file = path_2
+		if base_path2 == '':
+			messagebox.showerror('Ошибка',
+			                     'Выберите эксель файл или выберите в настройках путь для Excel файла регистрационного журнала в настройках.',
+			                     parent=win)
+			return
+		path_register_file = base_path2
 
-	book_1 = op.load_workbook(filename=path_sample_file)
+	try:
+		book_1 = op.load_workbook(filename=path_sample_file)
+		book_2 = op.load_workbook(filename=path_register_file)
+	except:
+		messagebox.showerror('Ошибка',
+		                    'Неудалось найти эксель файл. Проверьте, правильно ли указаны файлы пробоподготовки и регистрационного журнала в настройках. \nВозможно вы изменили названия выбранных файлов (заново выберите актуальные файлы в настройках).',
+		                     parent=win)
+		return
 	sheet_1 = book_1.active
-	book_2 = op.load_workbook(filename=path_register_file)
 	sheet_2 = book_2.active
+
+	try:
+		book_1.save(filename=path_sample_file)
+		book_2.save(filename=path_register_file)
+	except:
+		messagebox.showerror('Ошибка', 'Закройте используемые Excel файлы перед добавлением информации', parent=win)
 
 	if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
 		ls_indicators_research = ls_indicators.get()
@@ -516,14 +543,17 @@ def excel_func():
 
 	if op_xl_button_value.get() == 'No':
 		print('Сохранение в эксель без открытия')
+		messagebox.showinfo('Добавление в excel', 'Готово.', parent=win)
 		return
-	os.startfile(path_sample_file)
-	os.startfile(path_register_file)
-	print('Сохранение в эксель с открытием ')
-
-
-# except:
-# 	messagebox.showerror('Ошибка', 'Введен неправильный формат данных', parent=win)
+	try:
+		os.startfile(path_sample_file)
+		os.startfile(path_register_file)
+	except:
+		messagebox.showinfo('Добавление в excel', 'Готово. Эксель не открылся по причине того, что уже был запущен.',
+		                    parent=win)
+	else:
+		messagebox.showinfo('Добавление в excel', 'Готово.', parent=win)
+		print('Сохранение в эксель с открытием ')
 
 
 def get_file_1():
@@ -654,7 +684,7 @@ def repeat_for_stp():
 		79: 'препаратов', 80: 'препаратов', 81: 'препарат', 82: 'препарата', 83: 'препарата', 84: 'препарата',
 		85: 'препаратов', 86: 'препаратов', 87: 'препаратов', 88: 'препаратов', 89: 'препаратов', 90: 'препаратов',
 		91: 'препарат', 92: 'препарата', 93: 'препарата', 94: 'препарата', 95: 'препаратов', 96: 'препаратов',
-		97: 'препаратов', 98: 'препаратов', 99: 'препаратов', 100: 'препаратов'
+		97: 'препаратов', 98: 'препаратов', 99: 'препаратов', 00: 'препаратов'
 	}
 	if repeat_for_stp_value.get() == 'Yes':
 		stp_research_result = steps_sample.get().split('; ')[-1]
@@ -804,10 +834,11 @@ def word_func(dict_for_word, history_window_0):
 				else:
 					previous_dict[code] = name
 					nd_dict[code] = name
-
+			elif previous_dict[code] == name:
+				nd_dict[code] = previous_dict[code]
 			else:
 				ask_or = messagebox.askokcancel('Предупреждение',
-				                                f'Предыдущим значением для {code.upper()} являлось {previous_dict[code].upper()}, использовать сохраненный вариант? Отмена приведет к использованию  - нового варианта {name}',
+				                                f'Предыдущим значением для {code.upper()} являлось {previous_dict[code].upper()}, использовать сохраненный вариант? Отмена приведет к использованию - нового варианта {name}',
 				                                parent=add_to_dict_window)
 				if ask_or == False:
 					previous_dict[code] = name
@@ -1139,6 +1170,7 @@ def history_window():
 					combo_indicators.current(1)
 			else:
 				variables_for_row[i].insert(0, history_dict[value][i])
+		history_window_0.destroy()
 
 	def confirm_empty_to_main():
 		selection = l1.curselection()
@@ -1157,6 +1189,7 @@ def history_window():
 						combo_indicators.current(1)
 				else:
 					variables_for_row[i].insert(0, history_dict[value][i])
+		history_window_0.destroy()
 
 	def delete_from_csv():
 		selection = l1.curselection()
@@ -1278,20 +1311,20 @@ def history_window():
 	search_history.bind('<Return>', cb_search)
 	b_search_confirm = tk.Button(history_listbox_frame, text='Поиск', command=cb_search)
 	b_search_confirm.grid(row=0, column=7, columnspan=2, stick='w', pady=5)
-	b_search_delete = tk.Button(history_listbox_frame, text='Удалить', command=cb_del)
+	b_search_delete = tk.Button(history_listbox_frame, text='Очистить', command=cb_del)
 	b_search_delete.grid(row=0, column=9, columnspan=2, stick='w', pady=5)
 
 	l0_scroll = tk.Scrollbar(history_listbox_frame, orient='vertical')
 	# list_var_codes = tk.Variable(value=sample_codes)
 	l0 = tk.Listbox(history_listbox_frame, height=25, font=('Calibri', '10'),
-	                exportselection=False, yscrollcommand=l0_scroll.set) # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второг
+	                exportselection=False,
+	                yscrollcommand=l0_scroll.set)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второг
 	fill_listbox(sample_codes)
 	l0_scroll.config(command=l0.yview)
 	history_listbox_frame.grid(row=1, column=0, stick='w')
 	l0_scroll.grid(row=1, column=0, stick='nsw')
 	l0.grid(row=1, column=1, columnspan=10, stick='we')
 	l0.bind('<<ListboxSelect>>', show_codes_l0)
-
 
 	# exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
 
@@ -1321,6 +1354,16 @@ def clear_cell(index):
 
 
 def add_all_datas(load=True):
+	if base_path1 == '':
+		messagebox.showerror('Ошибка',
+		                     'Выберите эксель файл или выберите в настройках путь для Excel файла пробоподготовки в настройках',
+		                     parent=win)
+		return
+	if base_path2 == '':
+		messagebox.showerror('Ошибка',
+		                     'Выберите эксель файл или выберите в настройках путь для Excel файла регистрационного журнала в настройках.',
+		                     parent=win)
+		return
 	book_1 = op.load_workbook(filename=base_path1)
 	sheet_1 = book_1.active
 
@@ -1639,10 +1682,6 @@ def refresh_changes():
 			status = 'удаление'
 		t1['state'] = tk.DISABLED
 
-	def too_much_changes():
-		messagebox.showerror('Инфо',
-		                     'Слишком много изменений для выбора. Воспользуйтесь кнопкой "Принять все изменения", чтобы принять все изменения.')
-
 	def confirm_all_changes():
 		write_history(query_history_dict.values(), type_record='w')
 		messagebox.showinfo('Инфо', f'Было принято {counter_of_changes} изменений', parent=refresh_changes_window)
@@ -1651,6 +1690,11 @@ def refresh_changes():
 		pass
 
 	def choose_changes_checkbox_menu():
+		if len(query_history_changes) > 600:
+			messagebox.showerror('Инфо',
+			                     'Слишком много изменений для выбора. Воспользуйтесь кнопкой "Принять все изменения", чтобы принять все изменения.',
+			                     parent=refresh_changes_window)
+			return
 		window_for_choose_checkbox = tk.Toplevel(refresh_changes_window)  # нельзя нажимать в других окнах
 		window_for_choose_checkbox.title('Окно 2 чекбоксы')
 		window_for_choose_checkbox.geometry(f'{int(600.0 * scaling)}x{int(525.0 * scaling)}+1000+350')
@@ -1772,11 +1816,17 @@ def refresh_changes():
 	query_history_dict_checker_from_csv = query_history_dict.copy()
 
 	dict_from_excel = {}
-	for row in add_all_datas(load=False):
-		dict_key = row[1]
-		row[0] = str(row[0])
-		dict_values = ['' if v is None else v for v in row]
-		dict_from_excel[dict_key] = dict_values
+	try:
+		for row in add_all_datas(load=False):
+			dict_key = row[1]
+			row[0] = str(row[0])
+			dict_values = ['' if v is None else v for v in row]
+			dict_from_excel[dict_key] = dict_values
+	except:
+		if base_path1 != '' and base_path2 != '':
+			messagebox.showerror('Ошибка',
+			                     'Неполучилось обновить базу данных. Проверьте, правильно ли указаны файлы пробоподготовки и регистрационного журнала в настройках. \nВозможно вы изменили названия выбранных файлов (заново выберите актуальные файлы в настройках).')
+		return
 
 	dict_from_excel_codes = dict_from_excel.keys()
 	counter_of_changes = 0
@@ -1814,35 +1864,37 @@ def refresh_changes():
 		changes_frame = tk.Frame(refresh_changes_window)
 		l0_scroll = tk.Scrollbar(changes_frame, orient='vertical')
 		list_var_changes = tk.Variable(value=query_history_changes)
-		l0 = tk.Listbox(changes_frame, height=19, listvariable=list_var_changes,
-		                exportselection=False, yscrollcommand=l0_scroll.set)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
+		l0 = tk.Listbox(changes_frame, height=17, listvariable=list_var_changes,
+		                exportselection=False,
+		                yscrollcommand=l0_scroll.set)  # exportselection отвечает за то, чтобы при работе с виджетом можно было работать с другим без вреда для первого и второго
 
 		l0_scroll.config(command=l0.yview)
-		changes_frame.grid(row=0, column=0, stick='e')
-		l0_scroll.grid(row=0, column=0, stick='ens')
-		l0.grid(row=0, column=1, stick='w')
+		changes_frame.grid(row=1, column=0, stick='en')
+		l0_scroll.grid(row=1, column=0, stick='ens')
+		l0.grid(row=1, column=1, stick='wn')
 		l0.bind('<<ListboxSelect>>', choose_changes)
 
+		label0 = tk.Label(refresh_changes_window, text='Предыдущая версия')
+		label0.grid(row=0, column=2)
 		t0 = tk.Text(refresh_changes_window, width=100, wrap=tk.WORD, state=tk.DISABLED)
 		t0.tag_configure("before", foreground="red", background='#FFFFDA')
-		t0.grid(row=0, column=2, padx=5)
+		t0.grid(row=1, column=2, stick='s')
 
+		label0 = tk.Label(refresh_changes_window, text='Обновленная версия')
+		label0.grid(row=0, column=3)
 		t1 = tk.Text(refresh_changes_window, width=100, wrap=tk.WORD, state=tk.DISABLED)
 		t1.tag_configure("after", foreground="green", background='#FFFFDA')
-		t1.grid(row=0, column=3, padx=5)
+		t1.grid(row=1, column=3, stick='s')
 
 		tk.Button(refresh_changes_window, text='Отменить изменения', command=close_refresh_changes_window).grid(
-			row=1, column=0, columnspan=2, stick='we')
+			row=2, column=0, columnspan=2, stick='we')
 
 		if len(query_history_changes) <= 600:
 			tk.Button(refresh_changes_window, text='Выбрать изменения', command=choose_changes_checkbox_menu).grid(
-				row=1, column=2, stick='w', padx=5)
-		else:
-			tk.Button(refresh_changes_window, text='Выбрать изменения', command=too_much_changes).grid(
-				row=1, column=2, stick='w', padx=5)
+				row=2, column=2, stick='w', padx=5)
 
 		tk.Button(refresh_changes_window, text='Принять все изменения', command=confirm_all_changes).grid(
-			row=1, column=3, stick='w', padx=5)
+			row=2, column=3, stick='w', padx=5)
 
 
 # двойное
