@@ -36,7 +36,16 @@ def keypress(event):
 		event.widget.event_generate('<<SelectAll>>')
 
 
-def read_csv_one_string(filename, delimiter=';'):
+def _copy(event):
+	if event.keycode == 67:
+		try:
+			string = text_copy.selection_get()
+			clip.copy(string)
+		except:
+			pass
+
+
+def read_csv_one_string(filename, delimiter='&'):
 	with open(filename, 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter=delimiter)
 		for row in csv_reader:
@@ -54,7 +63,7 @@ def read_csv_full(filename, delimiter='&'):
 		return csv_list
 
 
-def write_csv(row, filename, delimiter=';'):
+def write_csv(row, filename, delimiter='&'):
 	row = sorted(row)
 	with open(filename, 'w', newline='', encoding='utf-8') as f:
 		writer = csv.writer(f, delimiter=delimiter)
@@ -62,11 +71,23 @@ def write_csv(row, filename, delimiter=';'):
 		f.close()
 
 
+def write_history(new_csv, type_data='list', type_record='a', filename='datas/query_history.csv'):
+	with open(file=filename, mode=type_record, newline='', encoding='utf-8') as f:
+		if type_data == 'list':
+			for row in new_csv:
+				writer = csv.writer(f, delimiter='&')
+				writer.writerow(row)
+		if type_data == 'row':
+			writer = csv.writer(f, delimiter='&')
+			writer.writerow(new_csv)
+		f.close()
+
+
 def write_settings_csv(value, row_number, filename='datas/settings.csv'):
 	settings_list = read_csv_one_string(filename='datas/settings.csv')
 	settings_list[row_number] = value
 	with open(filename, 'w', newline='', encoding='utf-8') as f:
-		writer = csv.writer(f, delimiter=';')
+		writer = csv.writer(f, delimiter='&')
 		writer.writerow(settings_list)
 		f.close()
 
@@ -90,11 +111,16 @@ def read_csv_to_dict(filename='datas/indicators_to_code.csv'):
 	return csv_to_dict
 
 
+def on_closing_0(this_window):
+	if messagebox.askokcancel('Выход из приложения', 'Хотите ли вы выйти из приложения?'):
+		this_window.destroy()
+
+
 try:
 	base_path1 = read_csv_one_string(filename='datas/settings.csv')[1]
 except FileNotFoundError:
 	with open('datas/settings.csv', 'w', newline='', encoding='utf-8') as f:
-		writer = csv.writer(f, delimiter=';')
+		writer = csv.writer(f, delimiter='&')
 		writer.writerow([
 			1.0,
 			'',
@@ -106,12 +132,80 @@ except FileNotFoundError:
 else:
 	base_path2 = read_csv_one_string(filename='datas/settings.csv')[2]
 
+check_datas = [
+	'datas/indicators_to_code.csv',
+	'datas/nm_sample_executor.csv',
+	'datas/query_history.csv',
+	'datas/rsp_executor.csv',
+	'datas/sp_did_research.csv',
+]
+
+for check_path in check_datas:
+	try:
+		read_csv_full(check_path)
+	except:
+		with open(check_path, 'w') as f:
+			f.close()
+
+scaling = float(read_csv_one_string('datas/settings.csv')[0])
+head_of_department = read_csv_one_string('datas/settings.csv')[3]
+
+win = tk.Tk()
+text_copy = tkinter.scrolledtext.ScrolledText(master=win, wrap='none')
+
+windll.shcore.SetProcessDpiAwareness(1)
+win.tk.call('tk', 'scaling', scaling)
+# отменить скейлинг
+win.geometry(f'{int(800.0 * scaling)}x{int(550.0 * scaling)}+1000+150')
+win.title('Программа')
+win.protocol('WM_DELETE_WINDOW', lambda: on_closing_0(win))
+win.event_delete('<<Paste>>', '<Control-V>')
+win.event_delete('<<Copy>>', '<Control-C>')
+win.event_delete('<<Cut>>', '<Control-X>')
+win.event_delete('<<SelectAll>>', '<Control-A>')
+win.event_delete('<<Paste>>', '<Control-v>')
+win.event_delete('<<Copy>>', '<Control-c>')
+win.event_delete('<<Cut>>', '<Control-x>')
+win.event_delete('<<SelectAll>>', '<Control-a>')
+win.bind("<Control-KeyPress>", keypress)
+win.bind_all("<Control-KeyPress>", _copy)
+
+
+def get_info():
+	print(f'Номер лабораторного журнала - {nb_lab_journal.get()}')
+	print(f'Регистрационный номер пробы - {rg_nb_sample.get()}')
+	print(f'Наименование пробы(образца) - {name_sample.get()}')
+	print(f'ФИО специалиста ответственного за пробоподготовку - {nm_sample_executor.get()}')
+	print(f'Примечания пробоподготовки - {nt_sample.get()}')
+	print(f'Примечания регистрационного журнала - {nt_register.get()}')
+	print(f'Перечень показателей через запятую - {ls_indicators.get()}')
+	print(f'Реквизиты НД для проведения пробоподготовки - {det_nd_prep_sample.get()}')
+	print(f'Реквизиты НД на метод исследования - {det_nd_research.get()}')
+	print(f'ФИО специалиста проводившего исследование - {sp_did_research.get()}')
+	print(f'ФИО ответственного исполнителя - {rsp_executor.get()}')
+	print(f'Дата начала исследования - {dt_st_research.get()}')
+	print(f'Дата начала пробоподготовки - {dt_st_sample_prep.get()}')
+	print(f'Дата отбора пробы (образца) - {dt_st_sampling.get()}')
+	print(f'Дата поступления - {dt_get_receipt.get()}')
+	print(f'Дата окончания исследования - {dt_fn_research.get()}')
+	print(f'Дата окончания пробоподготовки - {dt_fn_sample_prep.get()}')
+	print(f'Дата утилизации пробы/сведения о консервации - {dt_disposal.get()}')
+	print(f'Дата выписки листа протокола - {dt_issue_protocol.get()}')
+	print(f'Этапы пробоподготовки - {steps_sample.get()}')
+	print(f'Этапы исследования - {stp_research.get()}')
+	print('_________________________________________________')
+
 
 def settings_window():
 	def bases_file_1():
 		global base_path1
 		ebase1_path['state'] = tk.NORMAL
-		base_path1 = filedialog.askopenfilename()
+		new_base_path1 = filedialog.askopenfilename(parent=window_for_settings)
+		if new_base_path1 == '':
+			ebase1_path['state'] = tk.DISABLED
+			return
+		else:
+			base_path1 = new_base_path1
 		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить файл пробоподготовки?',
 		                                parent=window_for_settings)
 		if ask_or:
@@ -119,17 +213,26 @@ def settings_window():
 			ebase1_path.delete(0, tk.END)
 			ebase1_path.insert(0, base_path1)
 			ebase1_path['state'] = tk.DISABLED
+		else:
+			ebase1_path['state'] = tk.DISABLED
 
 	def bases_file_2():
 		global base_path2
 		ebase2_path['state'] = tk.NORMAL
-		base_path2 = filedialog.askopenfilename()
+		new_base_path2 = filedialog.askopenfilename(parent=window_for_settings)
+		if new_base_path2 == '':
+			ebase2_path['state'] = tk.DISABLED
+			return
+		else:
+			base_path2 = new_base_path2
 		ask_or = messagebox.askokcancel('Инфо', 'Вы точно хотите сменить регистрационный файл?',
 		                                parent=window_for_settings)
 		if ask_or:
 			write_settings_csv(base_path2, row_number=2)
 			ebase2_path.delete(0, tk.END)
 			ebase2_path.insert(0, base_path2)
+			ebase2_path['state'] = tk.DISABLED
+		else:
 			ebase2_path['state'] = tk.DISABLED
 
 	def change_head_of_department():
@@ -231,7 +334,7 @@ def settings_window():
 		window_for_code_to_nd.bind("<Control-KeyPress>", keypress)
 		window_for_code_to_nd.bind_all("<Control-KeyPress>", _copy)
 
-		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
+		dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv')}
 		indicator_list_var = tk.Variable(value=sorted(dict_data_set.keys()))
 		indicators_list = tk.Listbox(window_for_code_to_nd, listvariable=indicator_list_var, exportselection=False)
 		indicators_list.grid(row=0, column=0, columnspan=12, padx=42)
@@ -265,7 +368,7 @@ def settings_window():
 	tk.Button(window_for_settings, text='Применить', command=lambda: scaling_option(scaling_entry.get())).grid(
 		row=3, column=0)
 
-	tk.Label(window_for_settings, text='Выбери файл прободготовки для выгрузки в базу').grid(row=4, column=0)
+	tk.Label(window_for_settings, text='Выберите файл прободготовки для выгрузки в базу').grid(row=4, column=0)
 	ebase1_path = tk.Entry(window_for_settings, justify=tk.CENTER, font=('Arial', 10), width=80)
 	ebase1_path.insert(0, base_path1)
 	ebase1_path['state'] = tk.DISABLED
@@ -273,7 +376,7 @@ def settings_window():
 	tk.Button(window_for_settings, text='Выберите файл', bd=5, font=('Arial', 10), command=bases_file_1).grid(row=6,
 	                                                                                                          column=0)
 
-	tk.Label(window_for_settings, text='Выбери регистрационный файл для выгрузки в базу').grid(row=7, column=0)
+	tk.Label(window_for_settings, text='Выберите регистрационный файл для выгрузки в базу').grid(row=7, column=0)
 	ebase2_path = tk.Entry(window_for_settings, justify=tk.CENTER, font=('Arial', 10), width=80)
 	ebase2_path.insert(0, base_path2)
 	ebase2_path['state'] = tk.DISABLED
@@ -292,88 +395,60 @@ def settings_window():
 	          command=indicator_to_det_nd).grid(row=14, column=0, pady=20)
 
 
-scaling = float(read_csv_one_string('datas/settings.csv')[0])
-head_of_department = read_csv_one_string('datas/settings.csv')[3]
-
-win = tk.Tk()
-text_copy = tkinter.scrolledtext.ScrolledText(master=win, wrap='none')
-
-
-def _copy(event):
-	if event.keycode == 67:
-		try:
-			string = text_copy.selection_get()
-			clip.copy(string)
-		except:
-			pass
+def get_file_1():
+	global path_1
+	e1_path['state'] = tk.NORMAL
+	path_1 = filedialog.askopenfilename()
+	# tk.Label(win, text=path_1, anchor='w', width=10, height=1).grid(row=21, column=1, stick='w')
+	e1_path.delete(0, tk.END)
+	e1_path.insert(0, path_1)
+	e1_path['state'] = tk.DISABLED
 
 
-windll.shcore.SetProcessDpiAwareness(1)
-win.tk.call('tk', 'scaling', scaling)
-# отменить скейлинг
-win.geometry(f'{int(800.0 * scaling)}x{int(550.0 * scaling)}+1000+150')
-win.title('Программа')
-win.event_delete('<<Paste>>', '<Control-V>')
-win.event_delete('<<Copy>>', '<Control-C>')
-win.event_delete('<<Cut>>', '<Control-X>')
-win.event_delete('<<SelectAll>>', '<Control-A>')
-win.event_delete('<<Paste>>', '<Control-v>')
-win.event_delete('<<Copy>>', '<Control-c>')
-win.event_delete('<<Cut>>', '<Control-x>')
-win.event_delete('<<SelectAll>>', '<Control-a>')
-win.bind("<Control-KeyPress>", keypress)
-win.bind_all("<Control-KeyPress>", _copy)
-
-
-def get_info():
-	print(f'Номер лабораторного журнала - {nb_lab_journal.get()}')
-	print(f'Регистрационный номер пробы - {rg_nb_sample.get()}')
-	print(f'Наименование пробы(образца) - {name_sample.get()}')
-	print(f'ФИО специалиста ответственного за пробоподготовку - {nm_sample_executor.get()}')
-	print(f'Примечания пробоподготовки - {nt_sample.get()}')
-	print(f'Примечания регистрационного журнала - {nt_register.get()}')
-	print(f'Перечень показателей через запятую - {ls_indicators.get()}')
-	print(f'Реквизиты НД для проведения пробоподготовки - {det_nd_prep_sample.get()}')
-	print(f'Реквизиты НД на метод исследования - {det_nd_research.get()}')
-	print(f'ФИО специалиста проводившего исследование - {sp_did_research.get()}')
-	print(f'ФИО ответственного исполнителя - {rsp_executor.get()}')
-	print(f'Дата начала исследования - {dt_st_research.get()}')
-	print(f'Дата начала пробоподготовки - {dt_st_sample_prep.get()}')
-	print(f'Дата отбора пробы (образца) - {dt_st_sampling.get()}')
-	print(f'Дата поступления - {dt_get_receipt.get()}')
-	print(f'Дата окончания исследования - {dt_fn_research.get()}')
-	print(f'Дата окончания пробоподготовки - {dt_fn_sample_prep.get()}')
-	print(f'Дата утилизации пробы/сведения о консервации - {dt_disposal.get()}')
-	print(f'Дата выписки листа протокола - {dt_issue_protocol.get()}')
-	print(f'Этапы пробоподготовки - {steps_sample.get()}')
-	print(f'Этапы исследования - {stp_research.get()}')
-	print('_________________________________________________')
-
-
-def write_history(new_csv, type_data='list', type_record='a', filename='datas/query_history.csv'):
-	with open(file=filename, mode=type_record, newline='', encoding='utf-8') as f:
-		if type_data == 'list':
-			for row in new_csv:
-				writer = csv.writer(f, delimiter='&')
-				writer.writerow(row)
-		if type_data == 'row':
-			writer = csv.writer(f, delimiter='&')
-			writer.writerow(new_csv)
-		f.close()
+def get_file_2():
+	global path_2
+	e2_path['state'] = tk.NORMAL
+	path_2 = filedialog.askopenfilename()
+	# tk.Label(win, text=path_2, anchor='w', width=20, height=1).grid(row=22, column=1, stick='w')
+	e2_path.delete(0, tk.END)
+	e2_path.insert(0, path_2)
+	e2_path['state'] = tk.DISABLED
 
 
 def excel_func():
-	global base_path1, base_path2
+	global base_path1, base_path2, path_1, path_2
 
 	# try:
 	def styled_cells(data, sheet):
+		nonlocal excel_flag
 		if len(data) == 15:
 			for i, styled_cell in enumerate(data):
-				if i == 0:
-					styled_cell = int(styled_cell)
+				try:
+					if i == 0:
+						styled_cell = int(styled_cell)
+				except:
+					ask_or = messagebox.askokcancel('Ошибка',
+					                                'Возможно вы указали неправильный формат номера лабораторного журнала. Если номер был введен вверно нажмите ОК',
+					                                parent=win)
+					if ask_or:
+						pass
+					else:
+						excel_flag = False
+						return
 				if i in (5, 6, 10, 11):
-					styled_cell = datetime.datetime(int(styled_cell.split('.')[-1]), int(styled_cell.split('.')[1]),
-					                                int(styled_cell.split('.')[0]), 0, 0)
+					if styled_cell == '' or styled_cell == '-':
+						pass
+					else:
+						try:
+							styled_cell = datetime.datetime(int(styled_cell.split('.')[-1]),
+							                                int(styled_cell.split('.')[1]),
+							                                int(styled_cell.split('.')[0]), 0, 0)
+						except ValueError:
+							messagebox.showerror('Ошибка',
+							                     'Введите дату в формате dd.mm.yyyy (01.01.2024), введите "-" (прочерк) или оставьте поле пустым.',
+							                     parent=win)
+							excel_flag = False
+							return
 				styled_cell = Cell(sheet, column="A", value=styled_cell)
 				styled_cell.font = Font(name='Calibri', size=11)
 				styled_cell.border = Border(left=Side(style='thin'),
@@ -382,16 +457,33 @@ def excel_func():
 				                            bottom=Side(style='thin'))
 				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
 				if i in (5, 6, 10, 11):
-					styled_cell.number_format = 'dd/mm/yyyy;@'
-					styled_cell.alignment = Alignment(horizontal='right')
+					try:
+						styled_cell.number_format = 'dd/mm/yyyy;@'
+						styled_cell.alignment = Alignment(horizontal='right')
+					except:
+						pass
 				yield styled_cell
 		else:
 			for i, styled_cell in enumerate(data):
-				if i == 0:
-					styled_cell = int(styled_cell)
+				try:
+					if i == 0:
+						styled_cell = int(styled_cell)
+				except:
+					pass
 				if i in (3, 4, 5, 7, 8, 9):
-					styled_cell = datetime.datetime(int(styled_cell.split('.')[-1]), int(styled_cell.split('.')[1]),
-					                                int(styled_cell.split('.')[0]), 0, 0)
+					if styled_cell == '' or styled_cell == '-':
+						pass
+					else:
+						try:
+							styled_cell = datetime.datetime(int(styled_cell.split('.')[-1]),
+							                                int(styled_cell.split('.')[1]),
+							                                int(styled_cell.split('.')[0]), 0, 0)
+						except ValueError:
+							messagebox.showerror('Ошибка',
+							                     'Введите дату в формате dd.mm.yyyy (01.01.2024), введите "-" (прочерк) или оставьте поле пустым.',
+							                     parent=win)
+							excel_flag = False
+							return
 				styled_cell = Cell(sheet, column="A", value=styled_cell)
 				styled_cell.font = Font(name='Calibri', size=11)
 				styled_cell.border = Border(left=Side(style='thin'),
@@ -400,22 +492,52 @@ def excel_func():
 				                            bottom=Side(style='thin'))
 				styled_cell.alignment = Alignment(vertical='bottom', wrap_text=True)
 				if i in (3, 4, 5, 7, 8, 9):
-					styled_cell.number_format = 'dd/mm/yyyy;@'
-					styled_cell.alignment = Alignment(horizontal='right')
+					try:
+						styled_cell.number_format = 'dd/mm/yyyy;@'
+						styled_cell.alignment = Alignment(horizontal='right')
+					except:
+						pass
 				yield styled_cell
 
 	if rg_nb_sample.get() == '':
-		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки')
+		messagebox.showerror('Ошибка', 'Введите регистрационный номер пробы для отправки', parent=win)
 		return
 	if nb_lab_journal.get() == '':
-		messagebox.showerror('Ошибка', 'Введите номер лабораторного журнала')
+		messagebox.showerror('Ошибка', 'Введите номер лабораторного журнала', parent=win)
 		return
 	if ls_indicators.get() == '':
-		messagebox.showerror('Ошибка', 'Введите перечень показателей')
+		messagebox.showerror('Ошибка', 'Введите перечень показателей', parent=win)
 		return
 	if det_nd_prep_sample.get() == '' and det_nd_research.get() == '':
-		messagebox.showerror('Ошибка', 'Введите реквизиты НД')
+		messagebox.showerror('Ошибка', 'Введите реквизиты НД', parent=win)
 		return
+	if dt_st_research.get() == '':
+		ask_or = messagebox.askokcancel('Инфо', 'Вы не ввели дату начала исследования. Оставить поле пустым?',
+		                                parent=win)
+		if ask_or:
+			pass
+		else:
+			return
+	if dt_fn_research.get() == '':
+		messagebox.askokcancel('Инфо', 'Вы не ввели дату окончания исследования. Оставить поле пустым?', parent=win)
+		if ask_or:
+			pass
+		else:
+			return
+	if dt_st_sampling.get() == '':
+		messagebox.askokcancel('Инфо', 'Вы не ввели дату доставки пробы (образца). Оставить поле пустым?', parent=win)
+		if ask_or:
+			pass
+		else:
+			return
+	if sp_did_research.get() == '':
+		messagebox.askokcancel('Инфо', 'Вы не ввели ФИО специалста проводившего исследование. Оставить поле пустым?',
+		                       parent=win)
+		if ask_or:
+			pass
+		else:
+			return
+
 	dict_keys = []
 	with open('datas/query_history.csv', 'r', encoding='utf-8', newline='') as f:
 		csv_reader = csv.reader(f, delimiter='&')
@@ -427,7 +549,7 @@ def excel_func():
 		                                'Данный регистрационный номер уже находится в базе. Если вы хотите заменить запись нажмите ок, если вы не хотите заменять запись нажмите отмена',
 		                                parent=win)
 		if answer == True:
-			old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
+			old_csv = read_csv_full('datas/query_history.csv')
 			new_csv = []
 			for row in old_csv:
 				if rg_nb_sample.get() not in row:
@@ -445,6 +567,8 @@ def excel_func():
 			return
 		else:
 			path_sample_file = base_path1
+	else:
+		path_sample_file = path_1
 	if path_2 == '':
 		if base_path2 == '':
 			messagebox.showerror('Ошибка',
@@ -452,13 +576,15 @@ def excel_func():
 			                     parent=win)
 			return
 		path_register_file = base_path2
+	else:
+		path_register_file = path_2
 
 	try:
 		book_1 = op.load_workbook(filename=path_sample_file)
 		book_2 = op.load_workbook(filename=path_register_file)
 	except:
 		messagebox.showerror('Ошибка',
-		                    'Неудалось найти эксель файл. Проверьте, правильно ли указаны файлы пробоподготовки и регистрационного журнала в настройках. \nВозможно вы изменили названия выбранных файлов (заново выберите актуальные файлы в настройках).',
+		                     'Не удалось найти эксель файл. Проверьте, правильно ли указаны файлы пробоподготовки и регистрационного журнала в настройках. \nВозможно вы изменили названия выбранных файлов (заново выберите актуальные файлы в настройках).',
 		                     parent=win)
 		return
 	sheet_1 = book_1.active
@@ -469,6 +595,7 @@ def excel_func():
 		book_2.save(filename=path_register_file)
 	except:
 		messagebox.showerror('Ошибка', 'Закройте используемые Excel файлы перед добавлением информации', parent=win)
+		return
 
 	if ('обнаружены' or 'не обнаружены') in ls_indicators.get():
 		ls_indicators_research = ls_indicators.get()
@@ -507,11 +634,20 @@ def excel_func():
 		nt_register.get()  # 11
 	]
 
-	sheet_1.append(styled_cells(sample_file, sheet_1))
+	excel_flag = True
+	row_for_sheet_1 = list(styled_cells(sample_file, sheet_1))
+
+	if excel_flag == False:
+		return
+	row_for_sheet_2 = styled_cells(register_file, sheet_2)
+	if excel_flag == False:
+		return
+
+	sheet_1.append(row_for_sheet_1)
 	book_1.save(filename=path_sample_file)
 	path = os.path.realpath(path_sample_file)
 
-	sheet_2.append(styled_cells(register_file, sheet_2))
+	sheet_2.append(row_for_sheet_2)
 	book_2.save(filename=path_register_file)
 	path = os.path.realpath(path_register_file)
 
@@ -554,26 +690,6 @@ def excel_func():
 	else:
 		messagebox.showinfo('Добавление в excel', 'Готово.', parent=win)
 		print('Сохранение в эксель с открытием ')
-
-
-def get_file_1():
-	global path_1
-	e1_path['state'] = tk.NORMAL
-	path_1 = filedialog.askopenfilename()
-	# tk.Label(win, text=path_1, anchor='w', width=10, height=1).grid(row=21, column=1, stick='w')
-	e1_path.delete(0, tk.END)
-	e1_path.insert(0, path_1)
-	e1_path['state'] = tk.DISABLED
-
-
-def get_file_2():
-	global path_2
-	e2_path['state'] = tk.NORMAL
-	path_2 = filedialog.askopenfilename()
-	# tk.Label(win, text=path_2, anchor='w', width=20, height=1).grid(row=22, column=1, stick='w')
-	e2_path.delete(0, tk.END)
-	e2_path.insert(0, path_2)
-	e2_path['state'] = tk.DISABLED
 
 
 def repeat_for_nd():
@@ -703,7 +819,8 @@ def repeat_for_stp():
 
 		else:
 			messagebox.showerror('Ошибка',
-			                     'Неправильная форма этапов пробоподготовки, введите результаты иследования вручную')
+			                     'Неправильная форма этапов пробоподготовки, введите результаты иследования вручную',
+			                     parent=win)
 			repeat_for_stp_value.set('No')
 
 
@@ -749,8 +866,10 @@ def start_window_0(variable, filename):
 				messagebox.showerror('Ошибка', 'Такой сотрудник уже в списке!', parent=new_window_0)
 				return
 		else:
+			employees.append(new_employee)
 			write_csv([new_employee], filename)
 		employee_listbox.insert(0, new_employee)
+		employee_entry.delete(0, tk.END)
 
 	def show_print(evt):
 		w = evt.widget
@@ -773,7 +892,10 @@ def start_window_0(variable, filename):
 	employee_entry = ttk.Entry(new_window_0)
 	employee_entry.grid(column=0, stick='e', row=0, padx=6, pady=6, sticky='ew')
 	ttk.Button(new_window_0, text="Добавить специалиста", command=add).grid(column=1, row=0, padx=6, pady=6)
-	employees = read_csv_one_string(filename)
+	if read_csv_one_string(filename) == None:
+		employees = []
+	else:
+		employees = read_csv_one_string(filename)
 	employees_var = tk.Variable(new_window_0, value=employees)
 	employee_listbox = tk.Listbox(new_window_0, listvariable=employees_var)
 	employee_listbox.grid(row=1, column=0, stick='e', columnspan=2, sticky='ew', padx=5, pady=5)
@@ -781,11 +903,6 @@ def start_window_0(variable, filename):
 	ttk.Button(new_window_0, text="Применить", command=add_to_enter_box).grid(row=2, column=0, stick='e', padx=5,
 	                                                                          pady=5)
 	ttk.Button(new_window_0, text="Удалить", command=delete).grid(row=2, column=1, padx=5, pady=5)
-
-
-def on_closing_0(this_window):
-	if messagebox.askokcancel('Выход из приложения', 'Хотите ли вы выйти из приложения?'):
-		this_window.destroy()
 
 
 def dict_from_csv():
@@ -909,7 +1026,7 @@ def word_func(dict_for_word, history_window_0):
 	#####АВТОМАТИЗИРОВАННЫЙ ВАРИАНТ ВЫБОРА КОДОВ - ПОКАЗАТЕЛЕЙ
 
 	# def func_add_to_dict(name):
-	# 	dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv', delimiter='&')}
+	# 	dict_data_set = {k[0]: k[1] for k in read_csv_full('datas/indicators_to_code.csv')}
 	# 	dict_data_set[name] = add_e0.get()
 	# 	write_dict_to_list(dict_for_func=dict_data_set)
 	# 	var_to_sleep.set(1)
@@ -1194,7 +1311,7 @@ def history_window():
 	def delete_from_csv():
 		selection = l1.curselection()
 		value = l1.get(int(l1.curselection()[0]))
-		old_csv = read_csv_full('datas/query_history.csv', delimiter='&')
+		old_csv = read_csv_full('datas/query_history.csv')
 		new_csv = []
 		for row in old_csv:
 			if value not in row:
